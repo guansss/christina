@@ -7,12 +7,14 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "christina/server.py",
-                "FLASK_ENV": "development"
+                "FLASK_APP": "christina/server/server.py",
+                "FLASK_ENV": "development",
             },
             "args": [
                 "run",
-                "--host=0.0.0.0"
+                "--host=0.0.0.0",
+                "--cert=${env:HOME}/cert/local-cert.pem",
+                "--key=${env:HOME}/cert/local-key.pem"
             ],
             "jinja": true
         }
