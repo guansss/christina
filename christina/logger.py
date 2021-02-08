@@ -1,30 +1,31 @@
 import logging
 
-
 class LoggerDelegate:
     def __init__(self, logger):
         self.logger = logger
 
-    def format(self, *args):
-        strs = [arg if isinstance(arg, str) else repr(arg) for arg in args]
+        for method in ['debug', 'info', 'warning', 'error', 'critical']:
+            self.delegate_method(method, method)
 
-        return ' '.join(strs)
+        # prefer "warn" to "warning"
+        self.delegate_method('warn', 'warning')
 
+    def exception(self, *args, **kw):
+        # call as is
+        self.logger.exception(*args, **kw)
 
-def create_log_method(method: str):
-    def func(self, *args):
-        formatted_args = self.format(*args)
+    def delegate_method(self, method: str, delegated_method: str):
+        if not hasattr(self, method):
+            def func(self, *args):
+                formatted_args = [arg if isinstance(
+                    arg, str) else repr(arg) for arg in args]
 
-        for line in formatted_args.split('\n'):
-            getattr(self.logger, method)(line)
+                for line in ' '.join(formatted_args).split('\n'):
+                    getattr(self.logger, delegated_method)(line)
 
-    func.__name__ = method
+            func.__name__ = method
 
-    return func
-
-
-for method in ['debug', 'info', 'warning', 'error', 'critical']:
-    setattr(LoggerDelegate, method, create_log_method(method))
+            setattr(LoggerDelegate, method, func)
 
 
 class LogFormatter(logging.Formatter):
