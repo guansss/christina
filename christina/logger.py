@@ -27,18 +27,29 @@ for method in ['debug', 'info', 'warning', 'error', 'critical']:
     setattr(LoggerDelegate, method, create_log_method(method))
 
 
+class LogFormatter(logging.Formatter):
+    fmt = r'{name:-<16}[{levelname[0]}][{asctime}] {message}'
+    datefmt = r'%Y-%m-%d %H:%M:%S'
+
+    def __init__(self):
+        super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{')
+
+
 def get_logger(name: str):
+    # no need to show the root module
+    name = name.replace('christina.', '')
+
     logger = logging.getLogger(name)
 
     logger.setLevel(logging.DEBUG)
+    logger.propagate = False
 
     # set custom log formatter
-    # fmt = logging.Formatter(fmt='')
-    # handler = logging.StreamHandler()
-    # handler.setFormatter(fmt)
-    # logger.addHandler(handler)
+    handler = logging.StreamHandler()
+    handler.setFormatter(LogFormatter())
+    logger.addHandler(handler)
 
     if not hasattr(logger, '_delegate'):
-        logger._delegate=LoggerDelegate(logger)
+        logger._delegate = LoggerDelegate(logger)
 
     return logger._delegate
