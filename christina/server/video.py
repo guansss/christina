@@ -9,9 +9,9 @@ bp = Blueprint('video', __name__)
 @cross_origin()
 def download():
     try:
-        videoModel = video.download(request.json['url'], request.json['html'])
+        video_model = video.download(request.json['url'], request.json['html'])
 
-        return {'video': videoModel.id}, 200
+        return {'video': video_model.id}, 200
     except Exception as e:
         current_app.logger.error(e)
 

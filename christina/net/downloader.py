@@ -33,25 +33,21 @@ async def download_threaded(downloadable: Downloadable):
     downloadable.url = 'http://127.0.0.1:8000/test.txt'
 
     try:
-        logger.info(
-            f'Downloading "{downloadable.url}" to "{downloadable.file}"')
+        logger.info(f'Downloading "{downloadable.url}" to "{downloadable.file}"')
 
         proxy = None
 
         if downloadable.use_proxy:
             # never use proxy on local host...
             if '127.0.0.1' not in downloadable.url:
-                proxy = os.getenv('PROXY', None) or os.getenv(
-                    'http_proxy', None)
+                proxy = os.getenv('PROXY', None) or os.getenv('http_proxy', None)
 
                 if proxy:
                     logger.info('Using proxy:', proxy)
                 else:
-                    raise ValueError(
-                        'Proxy is requested but could not be found in env')
+                    raise ValueError('Proxy is requested but could not be found in env')
             else:
-                logger.warn(
-                    f'Proxy is ignored for local host ({downloadable.url})')
+                logger.warn(f'Proxy is ignored for local host ({downloadable.url})')
 
         async with http_session.get(downloadable.url, proxy=proxy) as resp:
             size = int(resp.headers.get('content-length', 0))
@@ -62,11 +58,9 @@ async def download_threaded(downloadable: Downloadable):
                 async for chunk in resp.content.iter_chunked(downloadable.chunk_size):
                     fd.write(chunk)
 
-                    downloadable.onprogress and downloadable.onprogress(
-                        fd.tell())
+                    downloadable.onprogress and downloadable.onprogress(fd.tell())
 
-                logger.info(
-                    f'Downloaded "{downloadable.url}" (size: {fd.tell()})')
+                logger.info(f'Downloaded "{downloadable.url}" (size: {fd.tell()})')
 
     except Exception as e:
         logger.error(f'Error while downloading {downloadable.url}')

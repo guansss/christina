@@ -1,5 +1,6 @@
 import logging
 
+
 class LoggerDelegate:
     def __init__(self, logger):
         self.logger = logger
@@ -17,8 +18,7 @@ class LoggerDelegate:
     def delegate_method(self, method: str, delegated_method: str):
         if not hasattr(self, method):
             def func(self, *args):
-                formatted_args = [arg if isinstance(
-                    arg, str) else repr(arg) for arg in args]
+                formatted_args = [arg if isinstance(arg, str) else repr(arg) for arg in args]
 
                 for line in ' '.join(formatted_args).split('\n'):
                     getattr(self.logger, delegated_method)(line)
