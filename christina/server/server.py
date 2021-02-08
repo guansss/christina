@@ -1,5 +1,6 @@
 from flask import Flask
 from .video import bp as videoBP
+import christina.env
 
 app = Flask(__name__)
 

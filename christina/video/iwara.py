@@ -1,6 +1,11 @@
+from christina import net
 from scrapy.selector import Selector
 import urllib.parse
+import os.path
 import re
+
+
+video_dir = os.path.join(os.path.expanduser('~'), 'Videos')
 
 
 class IwaraVideo:
@@ -15,6 +20,14 @@ class IwaraVideo:
 
 def download(url: str, html: str):
     video = parsePage(url, html)
+
+    downloadable = net.Downloadable(
+        url=video.url,
+        file=os.path.join(video_dir, video.file),
+        use_proxy=True
+    )
+
+    net.download(downloadable)
 
     return video
 
