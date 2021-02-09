@@ -5,7 +5,7 @@ import os.path
 import re
 
 
-video_dir = os.path.join(os.path.expanduser('~'), 'Videos')
+video_dir = os.path.join(os.environ['DATA_DIR'], 'iwara/vid')
 
 
 class IwaraVideo:

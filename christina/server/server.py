@@ -9,7 +9,7 @@ import christina.env
 
 
 app = Flask(__name__)
-socketio = SocketIO(app, logger=True)
+socketio = SocketIO(app, logger=False)
 
 # should be imported after creating `socketio`
 from .video import bp as video_bp  # nopep8
