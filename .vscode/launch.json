@@ -5,17 +5,9 @@
             "name": "Python: Flask",
             "type": "python",
             "request": "launch",
-            "module": "flask",
-            "env": {
-                "FLASK_APP": "christina/server/server.py",
-                "FLASK_ENV": "development",
-            },
-            "args": [
-                "run",
-                "--host=0.0.0.0",
-                "--cert=${env:HOME}/cert/local-cert.pem",
-                "--key=${env:HOME}/cert/local-key.pem"
-            ],
+            "module": "christina.server.server",
+            "justMyCode": false,
+            "gevent": true,
             "jinja": true
         }
     ]

@@ -1,6 +1,13 @@
 from flask import Blueprint, request, current_app
 from flask_cors import cross_origin
-from christina import video
+from christina import video, net, scheduler
+
+try:
+    from __main__ import socketio
+except ImportError:
+    # for some reason the main module will be named without the "christina" prefix
+    # when running app via `flask run`
+    from server.server import socketio
 
 bp = Blueprint('video', __name__)
 
@@ -16,3 +23,13 @@ def download():
         current_app.logger.error(e)
 
         return {'message': str(e)}, 400
+
+
+def broadcast_progress():
+    if net.download_tasks:
+        tasks = [{key: getattr(task, key) for key in ['file', 'loaded', 'size']} for task in net.download_tasks]
+
+        socketio.emit('progress', tasks)
+
+
+scheduler.scheduler.add_job(func=broadcast_progress, trigger="interval", seconds=1)

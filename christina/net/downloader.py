@@ -1,6 +1,6 @@
 from christina.logger import get_logger
 from threading import Thread
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 from dataclasses import dataclass
 import asyncio
 import aiohttp
@@ -12,6 +12,8 @@ loop = asyncio.new_event_loop()
 
 http_session = None
 
+download_tasks: List['Downloadable'] = []
+
 
 @dataclass
 class Downloadable:
@@ -19,8 +21,10 @@ class Downloadable:
     file: str
     use_proxy: bool = False
     chunk_size: int = 16384
-    onstart: Optional[Callable[[int], None]] = None
-    onprogress: Optional[Callable[[int], None]] = None
+    loaded: int = 0
+    size: int = 0
+    onstart: Optional[Callable[[], None]] = None
+    onprogress: Optional[Callable[[], None]] = None
     onload: Optional[Callable[[], None]] = None
     onerror: Optional[Callable[[Exception], None]] = None
 
@@ -34,6 +38,8 @@ async def download_threaded(downloadable: Downloadable):
 
     try:
         logger.info(f'Downloading "{downloadable.url}" to "{downloadable.file}"')
+
+        download_tasks.append(downloadable)
 
         proxy = None
 
@@ -50,15 +56,14 @@ async def download_threaded(downloadable: Downloadable):
                 logger.warn(f'Proxy is ignored for local host ({downloadable.url})')
 
         async with http_session.get(downloadable.url, proxy=proxy) as resp:
-            size = int(resp.headers.get('content-length', 0))
-
-            downloadable.onstart and downloadable.onstart(size)
+            downloadable.size = int(resp.headers.get('content-length', 0))
 
             with open(downloadable.file, 'wb') as fd:
                 async for chunk in resp.content.iter_chunked(downloadable.chunk_size):
                     fd.write(chunk)
 
-                    downloadable.onprogress and downloadable.onprogress(fd.tell())
+                    downloadable.loaded = fd.tell()
+                    downloadable.onprogress and downloadable.onprogress()
 
                 logger.info(f'Downloaded "{downloadable.url}" (size: {fd.tell()})')
 
@@ -67,6 +72,8 @@ async def download_threaded(downloadable: Downloadable):
         logger.exception(e)
 
         downloadable.onerror and downloadable.onerror(e)
+    finally:
+        download_tasks.remove(downloadable)
 
 
 def download_thread():
