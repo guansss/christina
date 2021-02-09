@@ -1,6 +1,9 @@
 from flask import Blueprint, request, current_app
 from flask_cors import cross_origin
 from christina import video, net, scheduler
+from christina.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from __main__ import socketio
@@ -20,9 +23,9 @@ def download():
 
         return {'video': video_model.id}, 200
     except Exception as e:
-        current_app.logger.error(e)
+        logger.exception(e)
 
-        return {'message': str(e)}, 400
+        return {'message': repr(e)}, 400
 
 
 def broadcast_progress():
