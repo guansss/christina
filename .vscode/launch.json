@@ -2,12 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Flask",
+            "name": "Python: FastAPI",
             "type": "python",
             "request": "launch",
-            "module": "christina.server.server",
-            "justMyCode": false,
-            "gevent": true,
+            "module": "uvicorn",
+            "args": [
+                "christina.server.server:app",
+                "--reload",
+                "--host=0.0.0.0",
+                "--port=5000",
+                "--ssl-certfile=${env:HOME}/cert/local-cert.pem",
+                "--ssl-keyfile=${env:HOME}/cert/local-key.pem"
+            ],
             "jinja": true
         }
     ]

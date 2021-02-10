@@ -37,7 +37,7 @@ async def download_threaded(downloadable: Downloadable):
     downloadable.url = 'http://127.0.0.1:8000/test.txt'
 
     try:
-        logger.info(f'Downloading "{downloadable.url}" to "{downloadable.file}"')
+        logger.info(f'Downloading "{downloadable.url}"\n...to "{downloadable.file}"')
 
         download_tasks.append(downloadable)
 

@@ -41,8 +41,6 @@ def download(url: str, html: str):
         use_proxy=True
     )
 
-    print(downloadable.url, flush=True)
-
     net.download(downloadable)
 
     return video
