@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -6,7 +6,6 @@ from christina import net
 from christina.db import engine, get_db, get_db_ctx
 from christina.video import parser, crud, models, schemas
 from christina.logger import get_logger
-import asyncio
 import os
 
 models.Base.metadata.create_all(bind=engine)
@@ -66,15 +65,6 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     )
 
     return db_video
-
-
-@router.websocket('/progress')
-async def ws_progress(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        tasks = [{key: getattr(task, key) for key in ['id', 'loaded', 'size']} for task in net.download_tasks]
-        await websocket.send_json(tasks)
-        await asyncio.sleep(1)
 
 
 def clear_fields(video_id: str, *fields: str):

@@ -3,6 +3,7 @@ from christina import utils
 from threading import Thread
 from typing import Callable, Optional, List, Union
 from dataclasses import dataclass
+from enum import Enum
 import asyncio
 import aiohttp
 import os
@@ -35,6 +36,7 @@ class DownloadTask:
 
         self.id = uuid.uuid4().hex[:8]
         self.path = os.path.join(download_dir, downloadable.file)
+        self.state = DownloadTask.State.INITIAL
         self.loaded = 0
         self.size = 0
         self.error = ''
@@ -45,6 +47,12 @@ class DownloadTask:
             return self.__dict__[key]
         return getattr(self.downloadable, key)
 
+    class State(Enum):
+        INITIAL = 0
+        LOADING = 1
+        SUCCEEDED = 2
+        FAILED = 3
+
 
 def get_task(id: str):
     return utils.find(download_tasks, lambda task: task.id == id)
@@ -53,6 +61,9 @@ def get_task(id: str):
 def download(task: Union[DownloadTask, Downloadable]):
     if not isinstance(task, DownloadTask):
         task = DownloadTask(task)
+
+    if task not in download_tasks:
+        download_tasks.append(task)
 
     asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
 
@@ -65,7 +76,7 @@ async def download_threaded(task: DownloadTask):
     try:
         logger.info(f'Downloading "{task.url}"\n...to "{task.path}"')
 
-        download_tasks.append(task)
+        task.state = DownloadTask.State.LOADING
 
         proxy = None
 
@@ -94,8 +105,12 @@ async def download_threaded(task: DownloadTask):
 
                 logger.info(f'Downloaded "{task.url}" (size: {fd.tell()})')
 
+                # is this necessary?
+                task.state = DownloadTask.State.SUCCEEDED
+
                 # remove succeeded task
                 download_tasks.remove(task)
+
                 task.onload and task.onload()
 
     except Exception as e:
@@ -108,6 +123,7 @@ async def download_threaded(task: DownloadTask):
             except Exception:
                 pass
 
+        task.state = DownloadTask.State.FAILED
         task.error = repr(e)
         task.onerror and task.onerror(e)
     finally:

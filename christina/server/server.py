@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, staticfiles
 from fastapi.middleware.cors import CORSMiddleware
 import christina.env
-from . import video
+from . import video, download
 import os
 
 app = FastAPI()
@@ -13,7 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", staticfiles.StaticFiles(directory=os.environ['DATA_DIR']), name="static")
+
 app.include_router(video.router)
+app.include_router(download.router)
 
 
 @app.get('/')
