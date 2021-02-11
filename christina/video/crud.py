@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from . import models, schemas
+from typing import Union
 
 
 def get_video(db: Session, id: int):
@@ -16,5 +17,15 @@ def create_video(db: Session, video: schemas.VideoBase):
     db_video = models.Video(**video.dict(), created=created)
     db.add(db_video)
     db.commit()
-    db.refresh(db_video)
     return db_video
+
+
+def update_video(db: Session, video: Union[int, models.Video], items: dict):
+    if isinstance(video, int):
+        video = get_video(db, video)
+
+    if video:
+        for field in items:
+            setattr(video, field, items[field])
+
+        db.commit()

@@ -16,5 +16,9 @@ class Video(Base):
     thumb_url = Column(String)
     thumb_file = Column(String)
 
+    # ID of the download tasks
+    video_dl_id = Column(String)
+    thumb_dl_id = Column(String)
+
     created = Column(DateTime)
     uploaded = Column(DateTime)

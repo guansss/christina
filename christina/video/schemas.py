@@ -6,12 +6,14 @@ class VideoBase(BaseModel):
     type: str
     src_id: str
     url: str
-    file: str
     title: str
     author_id: str
     uploaded: datetime
     thumb_url: str
-    thumb_file: str
+    file: str = ''
+    thumb_file: str = ''
+    video_dl_id: str = ''
+    thumb_dl_id: str = ''
 
 
 class Video(VideoBase):

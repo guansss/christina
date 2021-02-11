@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from pydantic.json import ENCODERS_BY_TYPE
 from datetime import datetime
 from christina import utils
+from contextlib import contextmanager
 import os
 
 SQLALCHEMY_DATABASE_URL = os.environ['DB_URL']
@@ -26,3 +27,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+get_db_ctx = contextmanager(get_db)

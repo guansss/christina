@@ -19,8 +19,9 @@ class LoggerDelegate:
         if not hasattr(self, method):
             def func(self, *args):
                 formatted_args = [arg if isinstance(arg, str) else repr(arg) for arg in args]
+                lines = ' '.join(formatted_args).split('\n')
 
-                for line in ' '.join(formatted_args).split('\n'):
+                for line in filter(None, lines):
                     getattr(self.logger, delegated_method)(line)
 
             func.__name__ = method

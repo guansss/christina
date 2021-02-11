@@ -1,55 +1,77 @@
 from christina.logger import get_logger
+from christina import utils
 from threading import Thread
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, Union
 from dataclasses import dataclass
 import asyncio
 import aiohttp
 import os
-
-download_dir = os.environ['DATA_DIR']
+import uuid
 
 logger = get_logger(__name__)
 loop = asyncio.new_event_loop()
 http_session = None
 
-download_tasks: List['Downloadable'] = []
+download_dir = os.environ['DATA_DIR']
+download_tasks: List['DownloadTask'] = []
 
 
 @dataclass
 class Downloadable:
     url: str
     file: str
-    full_path: str = ''
     use_proxy: bool = False
     chunk_size: int = 16384
-    loaded: int = 0
-    size: int = 0
-    onstart: Optional[Callable[[], None]] = None
-    onprogress: Optional[Callable[[], None]] = None
     onload: Optional[Callable[[], None]] = None
     onerror: Optional[Callable[[Exception], None]] = None
+    onended: Optional[Callable[[], None]] = None
 
 
-def download(downloadable: Downloadable):
-    asyncio.run_coroutine_threadsafe(download_threaded(downloadable), loop)
+class DownloadTask:
+    def __init__(self, downloadable: Downloadable):
+        downloadable.url = 'http://127.0.0.1:8000/test.txt'
+
+        self.downloadable = downloadable
+
+        self.id = uuid.uuid4().hex[:8]
+        self.path = os.path.join(download_dir, downloadable.file)
+        self.loaded = 0
+        self.size = 0
+        self.error = ''
+
+    def __getattr__(self, key: str):
+        # delegate the downloadable's attributes
+        if key in self.__dict__:
+            return self.__dict__[key]
+        return getattr(self.downloadable, key)
 
 
-async def download_threaded(downloadable: Downloadable):
-    downloadable.url = 'http://127.0.0.1:8000/test.txt'
-    downloadable.full_path = os.path.join(download_dir, downloadable.file)
+def get_task(id: str):
+    return utils.find(download_tasks, lambda task: task.id == id)
 
+
+def download(task: Union[DownloadTask, Downloadable]):
+    if not isinstance(task, DownloadTask):
+        task = DownloadTask(task)
+
+    asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
+
+    return task
+
+
+async def download_threaded(task: DownloadTask):
     fd = None
 
     try:
-        logger.info(f'Downloading "{downloadable.url}"\n...to "{downloadable.full_path}"')
+        logger.info(f'Downloading "{task.url}"\n...to "{task.path}"')
 
-        download_tasks.append(downloadable)
+        download_tasks.append(task)
 
         proxy = None
 
-        if downloadable.use_proxy:
+        if task.use_proxy:
             # never use proxy on local host...
-            if '127.0.0.1' not in downloadable.url:
+            if '127.0.0.1' not in task.url:
                 proxy = os.getenv('PROXY', None) or os.getenv('http_proxy', None)
 
                 if proxy:
@@ -57,24 +79,27 @@ async def download_threaded(downloadable: Downloadable):
                 else:
                     raise ValueError('Proxy is requested but could not be found in env')
             else:
-                logger.warn(f'Proxy is ignored for local host ({downloadable.url})')
+                logger.warn(f'Proxy is ignored for local host ({task.url})')
 
-        async with http_session.get(downloadable.url, proxy=proxy) as resp:
-            downloadable.size = int(resp.headers.get('content-length', 0))
+        async with http_session.get(task.url, proxy=proxy) as resp:
+            task.size = int(resp.headers.get('content-length', 0))
 
-            with open(downloadable.full_path, 'wb') as fd:
+            with open(task.path, 'wb') as fd:
                 fd = fd
 
-                async for chunk in resp.content.iter_chunked(downloadable.chunk_size):
+                async for chunk in resp.content.iter_chunked(task.chunk_size):
                     fd.write(chunk)
 
-                    downloadable.loaded = fd.tell()
-                    downloadable.onprogress and downloadable.onprogress()
+                    task.loaded = fd.tell()
 
-                logger.info(f'Downloaded "{downloadable.url}" (size: {fd.tell()})')
+                logger.info(f'Downloaded "{task.url}" (size: {fd.tell()})')
+
+                # remove succeeded task
+                download_tasks.remove(task)
+                task.onload and task.onload()
 
     except Exception as e:
-        logger.error(f'Error while downloading {downloadable.url}')
+        logger.error(f'Error while downloading {task.url}')
         logger.exception(e)
 
         if fd:
@@ -83,12 +108,13 @@ async def download_threaded(downloadable: Downloadable):
             except Exception:
                 pass
 
-        downloadable.onerror and downloadable.onerror(e)
+        task.error = repr(e)
+        task.onerror and task.onerror(e)
     finally:
-        download_tasks.remove(downloadable)
+        task.onended and task.onended()
 
 
-def download_thread():
+def downloader_thread():
     global http_session
 
     asyncio.set_event_loop(loop)
@@ -99,5 +125,5 @@ def download_thread():
     loop.close()
 
 
-thread = Thread(target=download_thread, daemon=True)
+thread = Thread(target=downloader_thread, daemon=True)
 thread.start()
