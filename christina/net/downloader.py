@@ -36,6 +36,8 @@ def download(downloadable: Downloadable):
 async def download_threaded(downloadable: Downloadable):
     downloadable.url = 'http://127.0.0.1:8000/test.txt'
 
+    fd = None
+
     try:
         logger.info(f'Downloading "{downloadable.url}"\n...to "{downloadable.file}"')
 
@@ -59,6 +61,8 @@ async def download_threaded(downloadable: Downloadable):
             downloadable.size = int(resp.headers.get('content-length', 0))
 
             with open(downloadable.file, 'wb') as fd:
+                fd = fd
+
                 async for chunk in resp.content.iter_chunked(downloadable.chunk_size):
                     fd.write(chunk)
 
@@ -70,6 +74,12 @@ async def download_threaded(downloadable: Downloadable):
     except Exception as e:
         logger.error(f'Error while downloading {downloadable.url}')
         logger.exception(e)
+
+        if fd:
+            try:
+                os.unlink(fd.name)
+            except Exception:
+                pass
 
         downloadable.onerror and downloadable.onerror(e)
     finally:

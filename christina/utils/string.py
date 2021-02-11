@@ -1,4 +1,4 @@
-def get_extension(path: str):
+def get_extension(path: str) -> str:
     filename = path[path.rfind('/')+1:]
     ext = filename[filename.rfind('.')+1:]
 

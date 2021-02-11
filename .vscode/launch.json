@@ -14,6 +14,7 @@
                 "--ssl-certfile=${env:HOME}/cert/local-cert.pem",
                 "--ssl-keyfile=${env:HOME}/cert/local-key.pem"
             ],
+            "justMyCode": false,
             "jinja": true
         }
     ]
