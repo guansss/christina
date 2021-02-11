@@ -1,5 +1,4 @@
 from fastapi import APIRouter, WebSocket, Depends
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -12,8 +11,8 @@ import os
 
 models.Base.metadata.create_all(bind=engine)
 
-video_dir = os.path.join(os.environ['DATA_DIR'], 'iwara/vid')
-img_dir = os.path.join(os.environ['DATA_DIR'], 'iwara/img')
+video_dir = 'vid'
+img_dir = 'img'
 
 logger = get_logger(__name__)
 
@@ -44,7 +43,7 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     db_video = crud.create_video(db, video)
 
-    basename = f'{db_video.id}_{info.title}'
+    basename = f'{db_video.type}_{db_video.id}_{info.title}'
 
     db_video.file = os.path.join(video_dir, f'{basename}.{info.ext}')
     db_video.thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')

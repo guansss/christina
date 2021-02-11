@@ -6,10 +6,10 @@ import asyncio
 import aiohttp
 import os
 
+download_dir = os.environ['DATA_DIR']
+
 logger = get_logger(__name__)
-
 loop = asyncio.new_event_loop()
-
 http_session = None
 
 download_tasks: List['Downloadable'] = []
@@ -19,6 +19,7 @@ download_tasks: List['Downloadable'] = []
 class Downloadable:
     url: str
     file: str
+    full_path: str = ''
     use_proxy: bool = False
     chunk_size: int = 16384
     loaded: int = 0
@@ -35,11 +36,12 @@ def download(downloadable: Downloadable):
 
 async def download_threaded(downloadable: Downloadable):
     downloadable.url = 'http://127.0.0.1:8000/test.txt'
+    downloadable.full_path = os.path.join(download_dir, downloadable.file)
 
     fd = None
 
     try:
-        logger.info(f'Downloading "{downloadable.url}"\n...to "{downloadable.file}"')
+        logger.info(f'Downloading "{downloadable.url}"\n...to "{downloadable.full_path}"')
 
         download_tasks.append(downloadable)
 
@@ -60,7 +62,7 @@ async def download_threaded(downloadable: Downloadable):
         async with http_session.get(downloadable.url, proxy=proxy) as resp:
             downloadable.size = int(resp.headers.get('content-length', 0))
 
-            with open(downloadable.file, 'wb') as fd:
+            with open(downloadable.full_path, 'wb') as fd:
                 fd = fd
 
                 async for chunk in resp.content.iter_chunked(downloadable.chunk_size):
