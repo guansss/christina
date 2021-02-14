@@ -1,6 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import List, Optional
+from christina import net
 
 
 class VideoBase(BaseModel):
@@ -22,6 +23,17 @@ class VideoBase(BaseModel):
 class Video(VideoBase):
     id: int
     created: datetime
+
+    url: str = None
+    thumb: str = None
+
+    @validator("url", always=True)
+    def get_url(cls, v, values):
+        return net.static(values['file'])
+
+    @validator("thumb", always=True)
+    def get_thumb(cls, v, values):
+        return net.static(values['thumb_file'])
 
     class Config:
         orm_mode = True
