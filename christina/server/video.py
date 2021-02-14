@@ -35,11 +35,11 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     video = schemas.VideoBase(
         type=source.type,
         src_id=info.src_id,
-        url=info.url,
         title=info.title,
         author_id=info.author_id,
         uploaded=datetime.fromtimestamp(info.uploaded_time),
-        thumb_url=info.thumb_url,
+        video_dl_url=info.url,
+        thumb_dl_url=info.thumb_url,
     )
 
     db_video = crud.create_video(db, video)
@@ -49,11 +49,11 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     file = os.path.join(video_dir, f'{basename}.{info.ext}')
     thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')
 
-    video_downloadable = net.Downloadable(url=db_video.url, file=file, use_proxy=True)
-    thumb_downloadable = net.Downloadable(url=db_video.thumb_url, file=thumb_file, use_proxy=True)
+    video_downloadable = net.Downloadable(url=db_video.video_dl_url, file=file, use_proxy=True)
+    thumb_downloadable = net.Downloadable(url=db_video.thumb_dl_url, file=thumb_file, use_proxy=True)
 
-    video_downloadable.onload = clear_fields(db_video.id, 'url', 'video_dl_id')
-    thumb_downloadable.onload = clear_fields(db_video.id, 'thumb_url', 'thumb_dl_id')
+    video_downloadable.onload = clear_fields(db_video.id, 'video_dl_url', 'video_dl_id')
+    thumb_downloadable.onload = clear_fields(db_video.id, 'thumb_dl_url', 'thumb_dl_id')
     video_task = net.download(video_downloadable)
     thumb_task = net.download(thumb_downloadable)
 

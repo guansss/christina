@@ -13,8 +13,8 @@ class VideoBase(BaseModel):
     thumb_file: str = ''
 
     # fields that will be deleted after downloads finish
-    url: Optional[str] = None
-    thumb_url: Optional[str] = None
+    video_dl_url: Optional[str] = None
+    thumb_dl_url: Optional[str] = None
     video_dl_id: Optional[str] = None
     thumb_dl_id: Optional[str] = None
 
