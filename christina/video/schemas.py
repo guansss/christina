@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 
 class VideoBase(BaseModel):
@@ -31,3 +31,8 @@ class VideoCreate(BaseModel):
     type: str
     url: str
     html: str
+
+
+class VideoList(BaseModel):
+    list: List[Video]
+    total: int

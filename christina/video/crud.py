@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from . import models, schemas
 from typing import Union
@@ -10,6 +11,10 @@ def get_video(db: Session, id: int):
 
 def get_videos(db: Session, offset: int = 0, limit: int = 10):
     return db.query(models.Video).offset(offset).limit(limit).all()
+
+
+def count_videos(db: Session):
+    return db.query(func.count(models.Video.id)).scalar()
 
 
 def create_video(db: Session, video: schemas.VideoBase):

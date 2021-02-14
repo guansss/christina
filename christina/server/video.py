@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List
 from datetime import datetime
 from christina import net
 from christina.db import engine, get_db, get_db_ctx
@@ -18,10 +17,15 @@ logger = get_logger(__name__)
 router = APIRouter(prefix='/videos')
 
 
-@router.get('/', response_model=List[schemas.Video])
+@router.get('/', response_model=schemas.VideoList)
 def route_videos(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     videos = crud.get_videos(db, offset, limit)
-    return videos
+    total = crud.count_videos(db)
+
+    return {
+        'list': videos,
+        'total': total
+    }
 
 
 @router.post('/', response_model=schemas.Video)
