@@ -18,8 +18,8 @@ router = APIRouter(prefix='/videos')
 
 
 @router.get('/', response_model=schemas.VideoList)
-def route_videos(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    videos = crud.get_videos(db, offset, limit)
+def route_videos(offset: int = 0, limit: int = 100, order: str = '', db: Session = Depends(get_db)):
+    videos = crud.get_videos(db, offset, limit, order)
     total = crud.count_videos(db)
 
     return {
