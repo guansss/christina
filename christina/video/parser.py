@@ -35,7 +35,7 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
     # e.g. /users/artypencil
     author_url = selector.css('.node-info .username::attr(href)').get()
 
-    author_id = author_url[author_url.rindex('/'):]
+    author_id = author_url[author_url.rindex('/') + 1:]
 
     download_urls = selector.css('#download-options li:first-child a::attr(href)').getall()
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from datetime import datetime
 from christina import net
@@ -44,13 +44,25 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     db_video = crud.create_video(db, video)
 
-    basename = f'{db_video.type}_{db_video.id}_{info.title}'
+    basename = f'{video.type}_{db_video.id}_{video.title}'
 
     file = os.path.join(video_dir, f'{basename}.{info.ext}')
     thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')
 
-    video_downloadable = net.Downloadable(url=db_video.video_dl_url, file=file, use_proxy=True)
-    thumb_downloadable = net.Downloadable(url=db_video.thumb_dl_url, file=thumb_file, use_proxy=True)
+    video_downloadable = net.Downloadable(
+        url=video.video_dl_url,
+        file=file,
+        type='video',
+        name=video.title,
+        use_proxy=True
+    )
+    thumb_downloadable = net.Downloadable(
+        url=video.thumb_dl_url,
+        file=thumb_file,
+        type='image',
+        name=video.title,
+        use_proxy=True
+    )
 
     video_downloadable.onload = clear_fields(db_video.id, 'video_dl_url', 'video_dl_id')
     thumb_downloadable.onload = clear_fields(db_video.id, 'thumb_dl_url', 'thumb_dl_id')

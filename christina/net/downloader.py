@@ -3,7 +3,7 @@ from christina import utils
 from threading import Thread
 from typing import Callable, Optional, List, Union
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 import asyncio
 import aiohttp
 import os
@@ -16,11 +16,15 @@ http_session = None
 download_dir = os.environ['DATA_DIR']
 download_tasks: List['DownloadTask'] = []
 
+downloader_emitter = utils.EventEmitter()
+
 
 @dataclass
 class Downloadable:
     url: str
     file: str
+    type: str
+    name: str
     use_proxy: bool = False
     chunk_size: int = 16384
     onload: Optional[Callable[[], None]] = None
@@ -47,7 +51,7 @@ class DownloadTask:
             return self.__dict__[key]
         return getattr(self.downloadable, key)
 
-    class State(Enum):
+    class State(IntEnum):
         INITIAL = 0
         LOADING = 1
         SUCCEEDED = 2
@@ -64,6 +68,8 @@ def download(task: Union[DownloadTask, Downloadable]):
 
     if task not in download_tasks:
         download_tasks.append(task)
+
+    downloader_emitter.emit('added', task)
 
     asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
 
@@ -103,15 +109,24 @@ async def download_threaded(task: DownloadTask):
 
                     task.loaded = fd.tell()
 
+                # fake download
+                task.size = 123_456_789
+                while task.loaded < task.size:
+                    await asyncio.sleep(1)
+                    task.loaded += task.size / 5
+
                 logger.info(f'Downloaded "{task.url}" (size: {fd.tell()})')
 
-                # is this necessary?
-                task.state = DownloadTask.State.SUCCEEDED
 
-                # remove succeeded task
-                download_tasks.remove(task)
+        # is this necessary?
+        task.state = DownloadTask.State.SUCCEEDED
 
-                task.onload and task.onload()
+        # remove succeeded task
+        download_tasks.remove(task)
+
+        task.onload and task.onload()
+
+        downloader_emitter.emit_threading('loaded', task)
 
     except Exception as e:
         logger.error(f'Error while downloading {task.url}')
@@ -126,6 +141,8 @@ async def download_threaded(task: DownloadTask):
         task.state = DownloadTask.State.FAILED
         task.error = repr(e)
         task.onerror and task.onerror(e)
+
+        downloader_emitter.emit_threading('failed', task)
     finally:
         task.onended and task.onended()
 
