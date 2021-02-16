@@ -69,7 +69,7 @@ def download(task: Union[DownloadTask, Downloadable]):
     if task not in download_tasks:
         download_tasks.append(task)
 
-    downloader_emitter.emit('added', task)
+    downloader_emitter.emit_threading('added', task)
 
     asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
 
