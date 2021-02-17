@@ -6,7 +6,7 @@ from christina import net
 
 class VideoBase(BaseModel):
     type: str
-    src_id: str
+    src_url: str
     title: str
     author_id: str
     uploaded: datetime

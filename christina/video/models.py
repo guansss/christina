@@ -7,7 +7,7 @@ class Video(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     type = Column(Enum('i'))
-    src_id = Column(String)
+    src_url = Column(String)
     title = Column(String)
     author_id = Column(String)
 

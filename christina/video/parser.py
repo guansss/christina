@@ -8,7 +8,7 @@ import re
 
 @dataclass
 class VideoInfo:
-    src_id: str
+    src_url: str
     url: str
     ext: str
     title: str
@@ -55,14 +55,13 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
     filename = file[file.rindex('/')+1:]
 
     uploaded_time = int(filename.split('_')[0])
-    id = filename.split('_')[1]
 
     # resolve relative URLs
     thumb_url = urllib.parse.urljoin(url, thumb_url)
     download_url = urllib.parse.urljoin(url, download_url)
 
     return VideoInfo(
-        src_id=id,
+        src_url=url,
         url=download_url,
         ext=utils.get_extension(filename),
         title=title,

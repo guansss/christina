@@ -34,7 +34,7 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     video = schemas.VideoBase(
         type=source.type,
-        src_id=info.src_id,
+        src_url=info.src_url,
         title=info.title,
         author_id=info.author_id,
         uploaded=datetime.fromtimestamp(info.uploaded_time),
