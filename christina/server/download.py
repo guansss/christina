@@ -10,17 +10,15 @@ download_ws_manager = ConnectionManager()
 router = APIRouter(prefix='/download')
 
 
-@router.get('/retry')
+@router.get('/retry/{id}')
 def route_retry(id: str):
-    task = net.get_task(id)
+    try:
+        net.retry(id)
+    except ValueError as e:
+        raise HTTPException(400, repr(e))
 
-    if not task:
-        raise HTTPException(404, f'Could not find task by ID: {id}.')
-
-    if task.state != DownloadTask.State.FAILED:
-        raise HTTPException(400, f'Cannot retry a task that has not failed. (state: {task.state})')
-
-    net.download(task)
+    # if succeeded, return something other than null...
+    return {"id": id}
 
 
 @router.websocket('/download/')

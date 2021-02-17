@@ -45,6 +45,11 @@ class DownloadTask:
         self.size = 0
         self.error = ''
 
+    def reset(self):
+        self.state = DownloadTask.State.INITIAL
+        self.loaded = 0
+        self.error = ''
+
     def __getattr__(self, key: str):
         # delegate the downloadable's attributes
         if key in self.__dict__:
@@ -62,13 +67,23 @@ def get_task(id: str):
     return utils.find(download_tasks, lambda task: task.id == id)
 
 
-def download(task: Union[DownloadTask, Downloadable]):
-    if not isinstance(task, DownloadTask):
-        task = DownloadTask(task)
+def retry(id: str):
+    task = get_task(id)
 
-    if task not in download_tasks:
-        download_tasks.append(task)
+    if not task:
+        raise ValueError(f'Could not find task by ID: {id}.')
 
+    if task.state != DownloadTask.State.FAILED:
+        raise ValueError(f'Cannot retry a task that has not failed. (state: {task.state})')
+
+    task.reset()
+
+    asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
+
+
+def download(downloadable: Downloadable):
+    task = DownloadTask(downloadable)
+    download_tasks.append(task)
     downloader_emitter.emit_threading('added', task)
 
     asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
@@ -98,6 +113,14 @@ async def download_threaded(task: DownloadTask):
             else:
                 logger.warn(f'Proxy is ignored for local host ({task.url})')
 
+        # fake download
+        task.size = 123_456_789
+        while task.loaded < task.size:
+            await asyncio.sleep(1)
+            task.loaded += task.size / 5
+
+        raise TypeError('Download failed for some reason.')
+
         async with http_session.get(task.url, proxy=proxy) as resp:
             task.size = int(resp.headers.get('content-length', 0))
 
@@ -116,7 +139,6 @@ async def download_threaded(task: DownloadTask):
                     task.loaded += task.size / 5
 
                 logger.info(f'Downloaded "{task.url}" (size: {fd.tell()})')
-
 
         # is this necessary?
         task.state = DownloadTask.State.SUCCEEDED
