@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
 from christina import net
@@ -26,6 +26,12 @@ def route_videos(offset: int = 0, limit: int = 100, order: str = '', db: Session
         'list': videos,
         'total': total
     }
+
+
+@router.get('/{id}', response_model=schemas.Video)
+def route_videos(id: str, db: Session = Depends(get_db)):
+    video = crud.get_video(db, id)
+    return video
 
 
 @router.post('/', response_model=schemas.Video)
