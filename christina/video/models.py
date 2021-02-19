@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime
+from sqlalchemy import Column, Integer, String, Enum, DateTime, Table, ForeignKey
+from sqlalchemy.orm import relationship
 from christina.db import Base
 
 
@@ -23,3 +24,21 @@ class Video(Base):
 
     created = Column(DateTime)
     uploaded = Column(DateTime)
+
+    chars = relationship("Character", secondary='video_char')
+
+
+class Character(Base):
+    __tablename__ = "chars"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    abbr = Column(String)
+
+
+video_char_table = Table(
+    'video_char',
+    Base.metadata,
+    Column('video_id', Integer, ForeignKey('videos.id'), primary_key=True),
+    Column('char_id', Integer, ForeignKey('chars.id'), primary_key=True)
+)

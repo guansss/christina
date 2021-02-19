@@ -18,8 +18,14 @@ router = APIRouter(prefix='/videos')
 
 
 @router.get('/', response_model=schemas.VideoList)
-def route_videos(offset: int = 0, limit: int = 100, order: str = '', db: Session = Depends(get_db)):
-    videos = crud.get_videos(db, offset, limit, order)
+def route_videos(
+    char: str = '',
+    offset: int = 0,
+    limit: int = 100,
+    order: str = '',
+    db: Session = Depends(get_db)
+):
+    videos = crud.get_videos(db, char, offset, limit, order)
     total = crud.count_videos(db)
 
     return {
@@ -29,13 +35,13 @@ def route_videos(offset: int = 0, limit: int = 100, order: str = '', db: Session
 
 
 @router.get('/{id}', response_model=schemas.Video)
-def route_videos(id: str, db: Session = Depends(get_db)):
+def route_video(id: str, db: Session = Depends(get_db)):
     video = crud.get_video(db, id)
     return video
 
 
-@router.post('/', response_model=schemas.Video)
-def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
+@router.post('/', status_code=201,response_model=schemas.Video)
+def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     info = parser.parse_video_source(source)
 
     video = schemas.VideoBase(
@@ -87,6 +93,7 @@ def download(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     )
 
     return db_video
+
 
 
 def clear_fields(video_id: str, *fields: str):

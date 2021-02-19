@@ -5,14 +5,21 @@ from . import models, schemas
 from typing import Union
 from christina.logger import get_logger
 
-logger=get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def get_video(db: Session, id: int):
     return db.query(models.Video).filter(models.Video.id == id).first()
 
 
-def get_videos(db: Session, offset: int = 0, limit: int = 10, order: str = ''):
+def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
+    query = db.query(models.Video) \
+        .join(models.video_char_table, isouter=True) \
+        .join(models.Character, isouter=True)
+
+    if char:
+        query = query.filter(models.Character.id == char)
+
     if order:
         descend = True
 
@@ -28,10 +35,7 @@ def get_videos(db: Session, offset: int = 0, limit: int = 10, order: str = ''):
         if descend:
             order_field = order_field.desc()
 
-        query = db.query(models.Video).order_by(order_field)
-
-    else:
-        query = db.query(models.Video)
+        query = query.order_by(order_field)
 
     return query.offset(offset).limit(limit).all()
 
@@ -44,7 +48,7 @@ def create_video(db: Session, video: schemas.VideoBase):
     created = datetime.now()
     db_video = models.Video(**video.dict(), created=created)
     db.add(db_video)
-    db.commit()
+    db.flush()
     return db_video
 
 
@@ -56,4 +60,40 @@ def update_video(db: Session, video: Union[int, models.Video], items: dict):
         for field in items:
             setattr(video, field, items[field])
 
-        db.commit()
+
+def get_chars(db: Session):
+    return db.query(models.Character).all()
+
+
+def create_char(db: Session, name: str, abbr: str):
+    db_char = models.Character(name=name, abbr=abbr)
+    db.add(db_char)
+    db.flush()
+    return db_char
+
+
+def add_video_char(db: Session, video_id: int, char_id: str):
+    if exist_video_char(db, video_id, char_id):
+        raise ValueError('Record already exists.')
+
+    clause = models.video_char_table.insert().values(video_id=video_id, char_id=char_id)
+    db.execute(clause)
+
+
+def remove_video_char(db: Session, video_id: int, char_id: str):
+    if not exist_video_char(db, video_id, char_id):
+        raise ValueError('Record does not exist.')
+
+    clause = models.video_char_table.delete().where(
+        (models.video_char_table.c.video_id == video_id)
+        & (models.video_char_table.c.char_id == char_id)
+    )
+    db.execute(clause)
+
+
+def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
+    return bool(
+        db.query(models.video_char_table)
+        .filter((models.video_char_table.c.video_id == video_id) & (models.video_char_table.c.char_id == char_id))
+        .first()
+    )

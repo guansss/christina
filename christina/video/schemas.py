@@ -10,8 +10,10 @@ class VideoBase(BaseModel):
     title: str
     author_id: str
     uploaded: datetime
-    file: str = ''
-    thumb_file: str = ''
+
+    # fields to be assigned after instantiation
+    file: str = None
+    thumb_file: str = None
 
     # fields that will be deleted after downloads finish
     video_dl_url: Optional[str] = None
@@ -26,6 +28,7 @@ class Video(VideoBase):
 
     url: str = None
     thumb: str = None
+    chars: List['Character'] = []
 
     @validator("url", always=True)
     def get_url(cls, v, values):
@@ -48,3 +51,24 @@ class VideoCreate(BaseModel):
 class VideoList(BaseModel):
     list: List[Video]
     total: int
+
+
+class CharacterBase(BaseModel):
+    name: str
+    abbr: str
+
+
+class Character(CharacterBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CharacterCreate(BaseModel):
+    name: str
+    abbr: str
+    video_id: Optional[int] = None
+
+
+Video.update_forward_refs()
