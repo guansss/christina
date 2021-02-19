@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 
 def get_video(db: Session, id: int):
-    return db.query(models.Video).filter(models.Video.id == id).first()
+    return db.query(models.Video).get(id)
 
 
 def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
@@ -94,6 +94,6 @@ def remove_video_char(db: Session, video_id: int, char_id: str):
 def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
     return bool(
         db.query(models.video_char_table)
-        .filter((models.video_char_table.c.video_id == video_id) & (models.video_char_table.c.char_id == char_id))
+        .filter_by(video_id = video_id, char_id = char_id)
         .first()
     )
