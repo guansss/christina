@@ -1,5 +1,6 @@
 from fastapi import WebSocket
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosed
+from starlette.websockets import WebSocketState
 from typing import List, Union
 from christina.logger import get_logger
 import asyncio
@@ -37,8 +38,11 @@ class ConnectionManager:
 
             for connection in self.active_connections:
                 try:
+                    if connection.application_state != WebSocketState.CONNECTED:
+                        raise ConnectionClosed
+
                     await getattr(connection, send_method)(message)
-                except ConnectionClosedError:
+                except ConnectionClosed:
                     self.disconnect(connection)
 
         except Exception as e:

@@ -1,6 +1,6 @@
 from christina.net.downloader import DownloadTask
 from fastapi import APIRouter, WebSocket, HTTPException
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosed
 from christina import net
 from .utils import ConnectionManager
 import asyncio
@@ -33,7 +33,7 @@ async def ws_tasks(websocket: WebSocket, interval: int = 1000):
             })
             await asyncio.sleep(interval / 1000)
 
-    except ConnectionClosedError:
+    except ConnectionClosed:
         download_ws_manager.disconnect(websocket)
 
 
