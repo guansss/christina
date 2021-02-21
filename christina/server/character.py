@@ -17,7 +17,7 @@ def route_char(db: Session = Depends(get_db)):
 
 @router.post('', status_code=201, response_model=schemas.Character)
 def route_add_char(source: schemas.CharacterCreate, db: Session = Depends(get_db)):
-    db_char = crud.create_char(db, name=source.name, abbr=source.abbr)
+    db_char = crud.create_char(db, name=source.name, alias=source.alias)
 
     if source.video_id:
         crud.add_video_char(db, source.video_id, db_char.id)

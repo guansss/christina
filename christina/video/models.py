@@ -33,7 +33,7 @@ class Character(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    abbr = Column(String)
+    alias = Column(String)
 
 
 video_char_table = Table(

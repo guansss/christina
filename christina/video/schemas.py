@@ -55,7 +55,7 @@ class VideoList(BaseModel):
 
 class CharacterBase(BaseModel):
     name: str
-    abbr: str
+    alias: Optional[str] = None
 
 
 class Character(CharacterBase):
@@ -67,7 +67,7 @@ class Character(CharacterBase):
 
 class CharacterCreate(BaseModel):
     name: str
-    abbr: str
+    alias: Optional[str] = None
     video_id: Optional[int] = None
 
 

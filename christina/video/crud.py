@@ -22,7 +22,7 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
         if ',' in char:
             query = query.filter(models.Character.id.in_(char.split(',')))
         else:
-        query = query.filter(models.Character.id == char)
+            query = query.filter(models.Character.id == char)
 
     if order:
         descend = True
@@ -69,11 +69,18 @@ def get_chars(db: Session):
     return db.query(models.Character).all()
 
 
-def create_char(db: Session, name: str, abbr: str):
-    db_char = models.Character(name=name, abbr=abbr)
+def create_char(db: Session, name: str, alias: str = None):
+    if exist_char(db, name):
+        raise ValueError('Name already exists.')
+
+    db_char = models.Character(name=name, alias=alias)
     db.add(db_char)
     db.flush()
     return db_char
+
+
+def exist_char(db: Session, name: str) -> bool:
+    return bool(db.query(models.Character).filter_by(name=name).first())
 
 
 def add_video_char(db: Session, video_id: int, char_id: str):
@@ -98,6 +105,6 @@ def remove_video_char(db: Session, video_id: int, char_id: str):
 def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
     return bool(
         db.query(models.video_char_table)
-        .filter_by(video_id = video_id, char_id = char_id)
+        .filter_by(video_id=video_id, char_id=char_id)
         .first()
     )
