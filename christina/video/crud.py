@@ -18,6 +18,10 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
         .join(models.Character, isouter=True)
 
     if char:
+        # the char can be a array like "1,2,3"
+        if ',' in char:
+            query = query.filter(models.Character.id.in_(char.split(',')))
+        else:
         query = query.filter(models.Character.id == char)
 
     if order:

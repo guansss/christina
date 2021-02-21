@@ -11,6 +11,8 @@ class LoggerDelegate:
         # prefer "warn" to "warning"
         self.delegate_method('warn', 'warning')
 
+        self.delegate_method('log', 'debug')
+
     def exception(self, *args, **kw):
         # call as is
         self.logger.exception(*args, **kw)
