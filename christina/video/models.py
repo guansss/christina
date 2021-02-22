@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, Table, ForeignKey
+from sqlalchemy import Column, Boolean, Integer, String, Enum, DateTime, Table, ForeignKey
 from sqlalchemy.orm import relationship
 from christina.db import Base
 
@@ -24,6 +24,8 @@ class Video(Base):
 
     created = Column(DateTime)
     uploaded = Column(DateTime)
+
+    deleted = Column(Boolean)
 
     chars = relationship("Character", secondary='video_char')
 

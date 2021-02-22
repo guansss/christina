@@ -15,7 +15,8 @@ def get_video(db: Session, id: int):
 def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
     query = db.query(models.Video) \
         .join(models.video_char_table, isouter=True) \
-        .join(models.Character, isouter=True)
+        .join(models.Character, isouter=True) \
+        .filter(models.Video.deleted == None)
 
     if char:
         # the char can be a array like "1,2,3"
@@ -63,6 +64,10 @@ def update_video(db: Session, video: Union[int, models.Video], items: dict):
     if video:
         for field in items:
             setattr(video, field, items[field])
+
+
+def delete_video(db: Session, id: int):
+    db.query(models.Video).get(id).deleted = True
 
 
 def get_chars(db: Session):

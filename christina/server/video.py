@@ -40,6 +40,11 @@ def route_video(id: str, db: Session = Depends(get_db)):
     return video
 
 
+@router.delete('/{id}', status_code=200)
+def route_delete_video(id: int, db: Session = Depends(get_db)):
+    crud.delete_video(db, id)
+
+
 @router.post('/', status_code=201,response_model=schemas.Video)
 def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     info = parser.parse_video_source(source)
@@ -93,7 +98,6 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     )
 
     return db_video
-
 
 
 def clear_fields(video_id: str, *fields: str):

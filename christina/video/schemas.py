@@ -21,6 +21,8 @@ class VideoBase(BaseModel):
     video_dl_id: Optional[str] = None
     thumb_dl_id: Optional[str] = None
 
+    deleted: Optional[bool] = None
+
 
 class Video(VideoBase):
     id: int
