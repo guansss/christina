@@ -25,8 +25,7 @@ def route_videos(
     order: str = '',
     db: Session = Depends(get_db)
 ):
-    videos = crud.get_videos(db, char, offset, limit, order)
-    total = crud.count_videos(db)
+    videos, total = crud.get_videos(db, char, offset, limit, order)
 
     return {
         'list': videos,

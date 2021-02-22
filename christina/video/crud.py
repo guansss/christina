@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from . import models, schemas
-from typing import Union
+from typing import Union, Tuple
 from christina.logger import get_logger
 
 logger = get_logger(__name__)
@@ -12,7 +12,7 @@ def get_video(db: Session, id: int):
     return db.query(models.Video).get(id)
 
 
-def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
+def get_videos(db: Session, char: str, offset: int, limit: int, order: str) -> Tuple[models.Video, int]:
     query = db.query(models.Video) \
         .join(models.video_char_table, isouter=True) \
         .join(models.Character, isouter=True) \
@@ -24,6 +24,9 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
             query = query.filter(models.Character.id.in_(char.split(',')))
         else:
             query = query.filter(models.Character.id == char)
+
+    # count without setting the order
+    total = query.count()
 
     if order:
         descend = True
@@ -42,7 +45,9 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str):
 
         query = query.order_by(order_field)
 
-    return query.offset(offset).limit(limit).all()
+    db_video = query.offset(offset).limit(limit).all()
+
+    return db_video, total
 
 
 def count_videos(db: Session):
