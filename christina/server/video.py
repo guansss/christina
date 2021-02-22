@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix='/videos')
 
 
-@router.get('/', response_model=schemas.VideoList)
+@router.get('', response_model=schemas.VideoList)
 def route_videos(
     char: str = '',
     offset: int = 0,
@@ -44,7 +44,7 @@ def route_delete_video(id: int, db: Session = Depends(get_db)):
     crud.delete_video(db, id)
 
 
-@router.post('/', status_code=201,response_model=schemas.Video)
+@router.post('', status_code=201, response_model=schemas.Video)
 def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     info = parser.parse_video_source(source)
 
