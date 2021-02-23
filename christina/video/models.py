@@ -11,6 +11,8 @@ class Video(Base):
     src_url = Column(String)
     title = Column(String)
     author_id = Column(String)
+    rating = Column(Integer)
+    deleted = Column(Boolean)
 
     file = Column(String)
     thumb_file = Column(String)
@@ -24,8 +26,6 @@ class Video(Base):
 
     created = Column(DateTime)
     uploaded = Column(DateTime)
-
-    deleted = Column(Boolean)
 
     chars = relationship("Character", secondary='video_char')
 

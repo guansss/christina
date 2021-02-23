@@ -10,6 +10,8 @@ class VideoBase(BaseModel):
     title: str
     author_id: str
     uploaded: datetime
+    rating: int = 0
+    deleted: Optional[bool] = None
 
     # fields to be assigned after instantiation
     file: str = None
@@ -20,8 +22,6 @@ class VideoBase(BaseModel):
     thumb_dl_url: Optional[str] = None
     video_dl_id: Optional[str] = None
     thumb_dl_id: Optional[str] = None
-
-    deleted: Optional[bool] = None
 
 
 class Video(VideoBase):
