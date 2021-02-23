@@ -66,7 +66,7 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     db_video = crud.create_video(db, video)
 
-    basename = f'{video.type}_{db_video.id}_{video.title}'
+    basename = f'{db_video.id:04}_{video.type}_{video.title}'
 
     file = os.path.join(video_dir, f'{basename}.{info.ext}')
     thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')
