@@ -31,12 +31,12 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str) -> T
     if order:
         descend = True
 
-        if '*' in order:
+        if '-' in order:
             descend = False
-            order = order.replace('*', '')
+            order = order.replace('-', '')
 
         if order not in models.Video.__dict__:
-            raise TypeError('Invalid order.')
+            raise ValueError('Invalid order.')
 
         order_field = getattr(models.Video, order)
 
@@ -69,8 +69,8 @@ def update_video(db: Session, video: Union[int, models.Video], items: dict):
     if not video:
         raise ValueError('Could not find video by ID.')
 
-        for field in items:
-            setattr(video, field, items[field])
+    for field in items:
+        setattr(video, field, items[field])
 
 
 def delete_video(db: Session, id: int):
