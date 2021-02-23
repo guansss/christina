@@ -35,11 +35,17 @@ def route_videos(
 
 @router.get('/{id}', response_model=schemas.Video)
 def route_video(id: str, db: Session = Depends(get_db)):
-    video = crud.get_video(db, id)
-    return video
+    return crud.get_video(db, id)
 
 
-@router.delete('/{id}', status_code=200)
+@router.patch('/{id}', response_model=schemas.Video)
+def route_video(id: int, update: schemas.VideoUpdate, db: Session = Depends(get_db)):
+    crud.update_video(db,id, update.dict(exclude_unset=True))
+
+    return crud.get_video(db, id)
+
+
+@router.delete('/{id}')
 def route_delete_video(id: int, db: Session = Depends(get_db)):
     crud.delete_video(db, id)
 

@@ -32,6 +32,6 @@ def index():
 app = CORSMiddleware(
     app=app,
     allow_origins=list(filter(None, os.environ['CORS_ORIGINS'].splitlines())),
-    allow_methods=["GET", 'POST', 'DELETE'],
+    allow_methods=["GET", 'POST', 'DELETE', 'PATCH'],
     allow_headers=["*"],
 )

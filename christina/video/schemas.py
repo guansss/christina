@@ -50,6 +50,10 @@ class VideoCreate(BaseModel):
     html: str
 
 
+class VideoUpdate(BaseModel):
+    rating: Optional[int] = None
+
+
 class VideoList(BaseModel):
     list: List[Video]
     total: int

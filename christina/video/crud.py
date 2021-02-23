@@ -66,13 +66,20 @@ def update_video(db: Session, video: Union[int, models.Video], items: dict):
     if isinstance(video, int):
         video = get_video(db, video)
 
-    if video:
+    if not video:
+        raise ValueError('Could not find video by ID.')
+
         for field in items:
             setattr(video, field, items[field])
 
 
 def delete_video(db: Session, id: int):
-    db.query(models.Video).get(id).deleted = True
+    db_video = db.query(models.Video).get(id)
+
+    if not db_video:
+        raise ValueError('Video does not exist.')
+
+    db_video.deleted = True
 
 
 def get_chars(db: Session):
