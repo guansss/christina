@@ -11,7 +11,7 @@ router = APIRouter(prefix='/chars')
 
 
 @router.get('', response_model=List[schemas.Character])
-def route_char(db: Session = Depends(get_db)):
+def route_chars(db: Session = Depends(get_db)):
     return crud.get_chars(db)
 
 
@@ -30,6 +30,6 @@ def route_add_char(char_id: str, video_id: str, db: Session = Depends(get_db)):
     crud.add_video_char(db, char_id=char_id, video_id=video_id)
 
 
-@router.delete('/{char_id}/videos/{video_id}', status_code=201)
+@router.delete('/{char_id}/videos/{video_id}')
 def route_add_char(char_id: str, video_id: str, db: Session = Depends(get_db)):
     crud.remove_video_char(db, char_id=char_id, video_id=video_id)

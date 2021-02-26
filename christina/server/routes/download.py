@@ -2,7 +2,7 @@ from christina.net.downloader import DownloadTask
 from fastapi import APIRouter, WebSocket, HTTPException
 from websockets.exceptions import ConnectionClosed
 from christina import net
-from .utils import ConnectionManager
+from ..utils import ConnectionManager
 import asyncio
 
 download_ws_manager = ConnectionManager()

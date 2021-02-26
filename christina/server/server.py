@@ -2,7 +2,7 @@ from fastapi import FastAPI, staticfiles, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 import christina.env
-from . import video, download, character
+from .routes import video, download, people, character, tag
 import os
 
 app = FastAPI()
@@ -11,7 +11,9 @@ app.mount("/static", staticfiles.StaticFiles(directory=os.environ['DATA_DIR']), 
 
 app.include_router(video.router)
 app.include_router(download.router)
+app.include_router(people.router)
 app.include_router(character.router)
+app.include_router(tag.router)
 
 
 @app.exception_handler(Exception)

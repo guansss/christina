@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
 from christina import net
 from christina.db import engine, get_db, get_db_ctx
 from christina.video import parser, crud, models, schemas
@@ -19,13 +20,40 @@ router = APIRouter(prefix='/videos')
 
 @router.get('', response_model=schemas.VideoList)
 def route_videos(
-    char: str = '',
+    creator: Optional[int] = None,
+    char: Optional[str] = None,
+    tag: Optional[str] = None,
     offset: int = 0,
     limit: int = 100,
     order: str = '',
     db: Session = Depends(get_db)
 ):
-    videos, total = crud.get_videos(db, char, offset, limit, order)
+    # the char and tag can be an array like "1,2,3"
+    try:
+        if ',' in char:
+            char = map(int, char.split(','))
+        else:
+            char = int(char)
+    except Exception:
+        char = None
+
+    try:
+        if ',' in tag:
+            tag = map(int, tag.split(','))
+        else:
+            tag = int(tag)
+    except Exception:
+        tag = None
+
+    videos, total = crud.get_videos(
+        db,
+        creator_id=creator,
+        char=char,
+        tag=tag,
+        offset=offset,
+        limit=limit,
+        order=order
+    )
 
     return {
         'list': videos,
@@ -40,7 +68,7 @@ def route_video(id: str, db: Session = Depends(get_db)):
 
 @router.patch('/{id}', response_model=schemas.Video)
 def route_video(id: int, update: schemas.VideoUpdate, db: Session = Depends(get_db)):
-    crud.update_video(db,id, update.dict(exclude_unset=True))
+    crud.update_video(db, id, update.dict(exclude_unset=True))
 
     return crud.get_video(db, id)
 
@@ -54,11 +82,21 @@ def route_delete_video(id: int, db: Session = Depends(get_db)):
 def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     info = parser.parse_video_source(source)
 
+    creator_id = None
+
+    if info.creator_name:
+        creator = crud.find_person(db, name=info.creator_name)
+
+        if not creator:
+            creator = crud.create_person(db, name=info.creator_name, url=info.creator_url)
+
+        creator_id = creator.id
+
     video = schemas.VideoBase(
         type=source.type,
+        creator_id=creator_id,
         src_url=info.src_url,
         title=info.title,
-        author_id=info.author_id,
         uploaded=datetime.fromtimestamp(info.uploaded_time),
         video_dl_url=info.url,
         thumb_dl_url=info.thumb_url,

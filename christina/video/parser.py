@@ -1,7 +1,8 @@
-from christina import net, utils
+from christina import utils
 from . import schemas
 from scrapy.selector import Selector
 from dataclasses import dataclass
+from typing import Optional
 import urllib.parse
 import re
 
@@ -14,8 +15,9 @@ class VideoInfo:
     title: str
     thumb_url: str
     thumb_ext: str
-    author_id: str
     uploaded_time: int
+    creator_name: str
+    creator_url: Optional[str] = None
 
 
 def parse_video_source(source: schemas.VideoCreate) -> VideoInfo:
@@ -33,9 +35,9 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
     thumb_url = selector.css('#video-player::attr(poster)').get()
 
     # e.g. /users/artypencil
-    author_url = selector.css('.node-info .username::attr(href)').get()
+    creator_url = selector.css('.node-info .username::attr(href)').get()
 
-    author_id = author_url[author_url.rindex('/') + 1:]
+    creator_name = selector.css('.node-info .username::text').get()
 
     download_urls = selector.css('#download-options li:first-child a::attr(href)').getall()
 
@@ -58,6 +60,7 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
 
     # resolve relative URLs
     thumb_url = urllib.parse.urljoin(url, thumb_url)
+    creator_url = urllib.parse.urljoin(url, creator_url)
     download_url = urllib.parse.urljoin(url, download_url)
 
     return VideoInfo(
@@ -67,6 +70,7 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
         title=title,
         thumb_url=thumb_url,
         thumb_ext=utils.get_extension(thumb_url),
-        author_id=author_id,
-        uploaded_time=uploaded_time
+        uploaded_time=uploaded_time,
+        creator_name=creator_name,
+        creator_url=creator_url,
     )

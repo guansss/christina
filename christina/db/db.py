@@ -34,3 +34,11 @@ def get_db():
 
 
 get_db_ctx = contextmanager(get_db)
+
+
+class RecordNotFound(Exception):
+    pass
+
+
+class RecordExists(Exception):
+    pass

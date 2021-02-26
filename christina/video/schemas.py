@@ -8,7 +8,6 @@ class VideoBase(BaseModel):
     type: str
     src_url: str
     title: str
-    author_id: str
     uploaded: datetime
     rating: int = 0
     deleted: Optional[bool] = None
@@ -23,14 +22,19 @@ class VideoBase(BaseModel):
     video_dl_id: Optional[str] = None
     thumb_dl_id: Optional[str] = None
 
+    # foreign key
+    creator_id: Optional[int] = None
+
 
 class Video(VideoBase):
     id: int
     created: datetime
-
     url: str = None
     thumb: str = None
+
+    creator: 'Person' = None
     chars: List['Character'] = []
+    tags: List['Tag'] = []
 
     @validator("url", always=True)
     def get_url(cls, v, values):
@@ -59,6 +63,22 @@ class VideoList(BaseModel):
     total: int
 
 
+class PersonBase(BaseModel):
+    name: str
+    url: Optional[str] = None
+
+
+class Person(PersonBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class PersonCreate(PersonBase):
+    video_id: Optional[int] = None
+
+
 class CharacterBase(BaseModel):
     name: str
     alias: Optional[str] = None
@@ -71,9 +91,23 @@ class Character(CharacterBase):
         orm_mode = True
 
 
-class CharacterCreate(BaseModel):
+class CharacterCreate(CharacterBase):
+    video_id: Optional[int] = None
+
+
+class TagBase(BaseModel):
     name: str
     alias: Optional[str] = None
+
+
+class Tag(TagBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class TagCreate(TagBase):
     video_id: Optional[int] = None
 
 

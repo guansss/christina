@@ -1,9 +1,10 @@
 from datetime import datetime
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from . import models, schemas
-from typing import Union, Tuple
+from typing import Union, Tuple, List, Optional
 from christina.logger import get_logger
+from christina.db import RecordNotFound, RecordExists
 
 logger = get_logger(__name__)
 
@@ -12,18 +13,38 @@ def get_video(db: Session, id: int):
     return db.query(models.Video).get(id)
 
 
-def get_videos(db: Session, char: str, offset: int, limit: int, order: str) -> Tuple[models.Video, int]:
+def get_videos(
+    db: Session,
+    *,
+    creator_id: Optional[int],
+    char: Optional[Union[int, List[int]]],
+    tag: Optional[Union[int, List[int]]],
+    offset: int,
+    limit: int,
+    order: str
+) -> Tuple[models.Video, int]:
     query = db.query(models.Video) \
-        .join(models.video_char_table, isouter=True) \
-        .join(models.Character, isouter=True) \
-        .filter(models.Video.deleted == None)
+        .filter(models.Video.deleted == None) \
+        .options(selectinload(models.Video.creator), selectinload(models.Video.chars), selectinload(models.Video.tags))
+
+    if creator_id:
+        query = query.filter(models.Video.creator_id == creator_id)
 
     if char:
-        # the char can be a array like "1,2,3"
-        if ',' in char:
-            query = query.filter(models.Character.id.in_(char.split(',')))
+        if isinstance(char, int):
+            query = query.filter(
+                models.Video.chars.any(models.Character.id == char)
+            )
         else:
-            query = query.filter(models.Character.id == char)
+            query = query.filter(
+                models.Video.chars.any(models.Character.id.in_(char))
+            )
+
+    if tag:
+        if isinstance(tag, int):
+            query = query.filter(models.Video.tags.any(models.Tag.id == tag))
+        else:
+            query = query.filter(models.Video.tags.any(models.Tag.id.in_(tag)))
 
     # count without setting the order
     total = query.count()
@@ -43,11 +64,11 @@ def get_videos(db: Session, char: str, offset: int, limit: int, order: str) -> T
         if descend:
             order_field = order_field.desc()
 
-        query = query.order_by(order_field)
+        query = query.order_by(order_field, models.Video.id)
 
-    db_video = query.offset(offset).limit(limit).all()
+    db_videos = query.offset(offset).limit(limit).all()
 
-    return db_video, total
+    return db_videos, total
 
 
 def count_videos(db: Session):
@@ -67,7 +88,7 @@ def update_video(db: Session, video: Union[int, models.Video], items: dict):
         video = get_video(db, video)
 
     if not video:
-        raise ValueError('Could not find video by ID.')
+        raise RecordNotFound
 
     for field in items:
         setattr(video, field, items[field])
@@ -77,9 +98,33 @@ def delete_video(db: Session, id: int):
     db_video = db.query(models.Video).get(id)
 
     if not db_video:
-        raise ValueError('Video does not exist.')
+        raise RecordNotFound
 
     db_video.deleted = True
+
+
+# Person
+
+
+def get_people(db: Session):
+    return db.query(models.Person).all()
+
+
+def find_person(db: Session, **fields):
+    return db.query(models.Person).filter_by(**fields).first()
+
+
+def create_person(db: Session, name: str, url: str = None):
+    if find_person(db, name=name, url=url):
+        raise RecordExists
+
+    db_person = models.Person(name=name, url=url)
+    db.add(db_person)
+    db.flush()
+    return db_person
+
+
+# Character
 
 
 def get_chars(db: Session):
@@ -88,7 +133,7 @@ def get_chars(db: Session):
 
 def create_char(db: Session, name: str, alias: str = None):
     if exist_char(db, name):
-        raise ValueError('Name already exists.')
+        raise RecordExists
 
     db_char = models.Character(name=name, alias=alias)
     db.add(db_char)
@@ -102,15 +147,16 @@ def exist_char(db: Session, name: str) -> bool:
 
 def add_video_char(db: Session, video_id: int, char_id: str):
     if exist_video_char(db, video_id, char_id):
-        raise ValueError('Record already exists.')
+        raise RecordExists
 
-    clause = models.video_char_table.insert().values(video_id=video_id, char_id=char_id)
+    clause = models.video_char_table.insert().values(
+        video_id=video_id, char_id=char_id)
     db.execute(clause)
 
 
 def remove_video_char(db: Session, video_id: int, char_id: str):
     if not exist_video_char(db, video_id, char_id):
-        raise ValueError('Record does not exist.')
+        raise RecordNotFound
 
     clause = models.video_char_table.delete().where(
         (models.video_char_table.c.video_id == video_id)
@@ -123,5 +169,53 @@ def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
     return bool(
         db.query(models.video_char_table)
         .filter_by(video_id=video_id, char_id=char_id)
+        .first()
+    )
+
+
+# Tag
+
+
+def get_tags(db: Session):
+    return db.query(models.Tag).all()
+
+
+def create_tag(db: Session, name: str, alias: str = None):
+    if exist_tag(db, name):
+        raise RecordExists
+
+    db_tag = models.Tag(name=name, alias=alias)
+    db.add(db_tag)
+    db.flush()
+    return db_tag
+
+
+def exist_tag(db: Session, name: str) -> bool:
+    return bool(db.query(models.Tag).filter_by(name=name).first())
+
+
+def add_video_tag(db: Session, video_id: int, tag_id: str):
+    if exist_video_tag(db, video_id, tag_id):
+        raise RecordExists
+
+    clause = models.video_tag_table.insert().values(video_id=video_id, tag_id=tag_id)
+    db.execute(clause)
+
+
+def remove_video_tag(db: Session, video_id: int, tag_id: str):
+    if not exist_video_tag(db, video_id, tag_id):
+        raise RecordNotFound
+
+    clause = models.video_tag_table.delete().where(
+        (models.video_tag_table.c.video_id == video_id)
+        & (models.video_tag_table.c.tag_id == tag_id)
+    )
+    db.execute(clause)
+
+
+def exist_video_tag(db: Session, video_id: int, tag_id: str) -> bool:
+    return bool(
+        db.query(models.video_tag_table)
+        .filter_by(video_id=video_id, tag_id=tag_id)
         .first()
     )
