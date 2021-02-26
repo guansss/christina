@@ -10,9 +10,7 @@
                 "christina.server.server:app",
                 "--reload",
                 "--host=0.0.0.0",
-                "--port=5000",
-                "--ssl-certfile=${env:HOME}/cert/local-cert.pem",
-                "--ssl-keyfile=${env:HOME}/cert/local-key.pem"
+                "--port=5000"
             ],
             "justMyCode": false,
             "jinja": true
