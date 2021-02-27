@@ -15,6 +15,18 @@ def get_video(db: Session, id: int):
     return db.query(models.Video).get(id)
 
 
+def get_random_video(db: Session, current_id: Optional[int], rating: Optional[int]):
+    query = db.query(models.Video).filter_by(deleted=None)
+
+    if current_id is not None:
+        query = query.filter(models.Video.id != current_id)
+
+    if rating is not None:
+        query = query.filter_by(rating=rating)
+
+    return query.order_by(func.random()).first()
+
+
 def get_videos(
         db: Session,
         *,

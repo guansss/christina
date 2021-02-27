@@ -63,6 +63,11 @@ def route_videos(
     }
 
 
+@router.get('/random', response_model=schemas.Video)
+def route_video(current_id: Optional[int], rating: Optional[int] = None, db: Session = Depends(get_db)):
+    return crud.get_random_video(db, current_id, rating)
+
+
 @router.get('/{id}', response_model=schemas.Video)
 def route_video(id: int, db: Session = Depends(get_db)):
     return crud.get_video(db, id)
