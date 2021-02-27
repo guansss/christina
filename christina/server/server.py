@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # noinspection PyUnresolvedReferences
 import christina.env
-from .routes import video, download, people, character, tag
+from .routes import video, download, people, character, tag, proxy
 
 app = FastAPI()
 
@@ -17,6 +17,7 @@ app.include_router(download.router)
 app.include_router(people.router)
 app.include_router(character.router)
 app.include_router(tag.router)
+app.include_router(proxy.router)
 
 
 @app.exception_handler(Exception)
@@ -37,6 +38,6 @@ def index():
 app = CORSMiddleware(
     app=app,
     allow_origins=list(filter(None, os.environ['CORS_ORIGINS'].splitlines())),
-    allow_methods=["GET", 'POST', 'DELETE', 'PATCH'],
+    allow_methods=["GET", 'POST', 'PUT', 'DELETE', 'PATCH'],
     allow_headers=["*"],
 )

@@ -10,6 +10,7 @@ import aiohttp
 
 from christina import utils
 from christina.logger import get_logger
+from christina.tools.proxy import HTTP_PROXY
 
 logger = get_logger(__name__)
 loop = asyncio.new_event_loop()
@@ -101,17 +102,13 @@ async def download_threaded(task: DownloadTask):
 
         task.state = DownloadTask.State.LOADING
 
-        proxy = None
-
         if task.use_proxy:
             # never use proxy on local host...
             if '127.0.0.1' not in task.url:
-                proxy = os.getenv('PROXY', None) or os.getenv('http_proxy', None)
-
-                if proxy:
-                    logger.info('Using proxy:', proxy)
+                if HTTP_PROXY:
+                    logger.info('Using proxy:', HTTP_PROXY)
                 else:
-                    raise ValueError('Proxy is requested but could not be found in env')
+                    raise ValueError('Proxy is requested but could not be found in env.')
             else:
                 logger.warn(f'Proxy is ignored for local host ({task.url})')
 
@@ -123,7 +120,7 @@ async def download_threaded(task: DownloadTask):
 
         raise TypeError('Download failed for some reason.')
 
-        async with http_session.get(task.url, proxy=proxy) as resp:
+        async with http_session.get(task.url, proxy=HTTP_PROXY) as resp:
             task.size = int(resp.headers.get('content-length', 0))
 
             with open(task.path, 'wb') as fd:
