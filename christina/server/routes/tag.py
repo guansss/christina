@@ -28,10 +28,10 @@ def route_add_tag(source: schemas.TagCreate, db: Session = Depends(get_db)):
 
 
 @router.post('/{tag_id}/videos/{video_id}', status_code=200)
-def route_add_tag(tag_id: str, video_id: str, db: Session = Depends(get_db)):
+def route_add_tag(tag_id: int, video_id: int, db: Session = Depends(get_db)):
     crud.add_video_tag(db, tag_id=tag_id, video_id=video_id)
 
 
 @router.delete('/{tag_id}/videos/{video_id}', status_code=201)
-def route_add_tag(tag_id: str, video_id: str, db: Session = Depends(get_db)):
+def route_add_tag(tag_id: int, video_id: int, db: Session = Depends(get_db)):
     crud.remove_video_tag(db, tag_id=tag_id, video_id=video_id)

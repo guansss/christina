@@ -28,10 +28,10 @@ def route_add_char(source: schemas.CharacterCreate, db: Session = Depends(get_db
 
 
 @router.post('/{char_id}/videos/{video_id}', status_code=200)
-def route_add_char(char_id: str, video_id: str, db: Session = Depends(get_db)):
+def route_add_char(char_id: int, video_id: int, db: Session = Depends(get_db)):
     crud.add_video_char(db, char_id=char_id, video_id=video_id)
 
 
 @router.delete('/{char_id}/videos/{video_id}')
-def route_add_char(char_id: str, video_id: str, db: Session = Depends(get_db)):
+def route_add_char(char_id: int, video_id: int, db: Session = Depends(get_db)):
     crud.remove_video_char(db, char_id=char_id, video_id=video_id)

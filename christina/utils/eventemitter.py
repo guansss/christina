@@ -11,4 +11,4 @@ class EventEmitter(BaseEventEmitter):
 
     # emit event in thread in which this emitter is created
     def emit_threading(self, event, *args, **kwargs):
-        self.loop.call_soon_threadsafe(super().emit, event, *args, **kwargs)
+        self.loop.call_soon_threadsafe(super().emit, event, *args)

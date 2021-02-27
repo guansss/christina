@@ -1,10 +1,10 @@
 import datetime
-from typing import Any, Iterator, Optional, Union, Callable, TypeVar
+from typing import Any, Iterator, Optional, Callable, TypeVar
 
 T = TypeVar('T')
 
 
-def timestamp(dt: Union[datetime.date, datetime.time]) -> int:
+def timestamp(dt: datetime) -> int:
     return int(dt.timestamp() * 1000)
 
 

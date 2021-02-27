@@ -147,7 +147,7 @@ def exist_char(db: Session, name: str) -> bool:
     return bool(db.query(models.Character).filter_by(name=name).first())
 
 
-def add_video_char(db: Session, video_id: int, char_id: str):
+def add_video_char(db: Session, video_id: int, char_id: int):
     if exist_video_char(db, video_id, char_id):
         raise RecordExists
 
@@ -156,7 +156,7 @@ def add_video_char(db: Session, video_id: int, char_id: str):
     db.execute(clause)
 
 
-def remove_video_char(db: Session, video_id: int, char_id: str):
+def remove_video_char(db: Session, video_id: int, char_id: int):
     if not exist_video_char(db, video_id, char_id):
         raise RecordNotFound
 
@@ -167,7 +167,7 @@ def remove_video_char(db: Session, video_id: int, char_id: str):
     db.execute(clause)
 
 
-def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
+def exist_video_char(db: Session, video_id: int, char_id: int) -> bool:
     return bool(
         db.query(models.video_char_table)
             .filter_by(video_id=video_id, char_id=char_id)
@@ -196,7 +196,7 @@ def exist_tag(db: Session, name: str) -> bool:
     return bool(db.query(models.Tag).filter_by(name=name).first())
 
 
-def add_video_tag(db: Session, video_id: int, tag_id: str):
+def add_video_tag(db: Session, video_id: int, tag_id: int):
     if exist_video_tag(db, video_id, tag_id):
         raise RecordExists
 
@@ -204,7 +204,7 @@ def add_video_tag(db: Session, video_id: int, tag_id: str):
     db.execute(clause)
 
 
-def remove_video_tag(db: Session, video_id: int, tag_id: str):
+def remove_video_tag(db: Session, video_id: int, tag_id: int):
     if not exist_video_tag(db, video_id, tag_id):
         raise RecordNotFound
 
@@ -215,7 +215,7 @@ def remove_video_tag(db: Session, video_id: int, tag_id: str):
     db.execute(clause)
 
 
-def exist_video_tag(db: Session, video_id: int, tag_id: str) -> bool:
+def exist_video_tag(db: Session, video_id: int, tag_id: int) -> bool:
     return bool(
         db.query(models.video_tag_table)
             .filter_by(video_id=video_id, tag_id=tag_id)

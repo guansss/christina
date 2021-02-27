@@ -64,7 +64,7 @@ def route_videos(
 
 
 @router.get('/{id}', response_model=schemas.Video)
-def route_video(id: str, db: Session = Depends(get_db)):
+def route_video(id: int, db: Session = Depends(get_db)):
     return crud.get_video(db, id)
 
 
@@ -145,7 +145,7 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     return db_video
 
 
-def clear_fields(video_id: str, *fields: str):
+def clear_fields(video_id: int, *fields: str):
     def fn():
         try:
             with get_db_ctx() as db:
