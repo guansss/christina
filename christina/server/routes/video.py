@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+import os
 from datetime import datetime
 from typing import Optional
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
 from christina import net
 from christina.db import engine, get_db, get_db_ctx
-from christina.video import parser, crud, models, schemas
 from christina.logger import get_logger
-import os
+from christina.video import parser, crud, models, schemas
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -20,13 +22,13 @@ router = APIRouter(prefix='/videos')
 
 @router.get('', response_model=schemas.VideoList)
 def route_videos(
-    creator: Optional[int] = None,
-    char: Optional[str] = None,
-    tag: Optional[str] = None,
-    offset: int = 0,
-    limit: int = 100,
-    order: str = '',
-    db: Session = Depends(get_db)
+        creator: Optional[int] = None,
+        char: Optional[str] = None,
+        tag: Optional[str] = None,
+        offset: int = 0,
+        limit: int = 100,
+        order: str = '',
+        db: Session = Depends(get_db)
 ):
     # the char and tag can be an array like "1,2,3"
     try:

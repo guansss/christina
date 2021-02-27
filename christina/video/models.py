@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Boolean, Integer, String, Enum, DateTime, Table, ForeignKey
 from sqlalchemy.orm import relationship
+
 from christina.db import Base
 
 

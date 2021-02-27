@@ -1,12 +1,13 @@
+import os
+from contextlib import contextmanager
 from datetime import datetime
+
+from pydantic.json import ENCODERS_BY_TYPE
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from pydantic.json import ENCODERS_BY_TYPE
-from datetime import datetime
+
 from christina import utils
-from contextlib import contextmanager
-import os
 
 SQLALCHEMY_DATABASE_URL = os.environ['DB_URL']
 

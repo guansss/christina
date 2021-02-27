@@ -1,10 +1,12 @@
-from christina import utils
-from . import schemas
-from scrapy.selector import Selector
+import re
+import urllib.parse
 from dataclasses import dataclass
 from typing import Optional
-import urllib.parse
-import re
+
+from scrapy.selector import Selector
+
+from christina import utils
+from . import schemas
 
 
 @dataclass
@@ -54,7 +56,7 @@ def parse_iwara_page(url: str, html: str) -> VideoInfo:
     # e.g. 2021/01/09/1610163870_No7lRIgR5YFp5vlpJ_Source.mp4
     file = urllib.parse.unquote(file)
 
-    filename = file[file.rindex('/')+1:]
+    filename = file[file.rindex('/') + 1:]
 
     uploaded_time = int(filename.split('_')[0])
 

@@ -1,13 +1,15 @@
-from christina.logger import get_logger
-from christina import utils
-from threading import Thread
-from typing import Callable, Optional, List, Union
-from dataclasses import dataclass
-from enum import IntEnum
 import asyncio
-import aiohttp
 import os
 import uuid
+from dataclasses import dataclass
+from enum import IntEnum
+from threading import Thread
+from typing import Callable, Optional, List
+
+import aiohttp
+
+from christina import utils
+from christina.logger import get_logger
 
 logger = get_logger(__name__)
 loop = asyncio.new_event_loop()

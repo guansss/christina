@@ -1,10 +1,12 @@
 from datetime import datetime
+from typing import Union, Tuple, List, Optional
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
-from . import models, schemas
-from typing import Union, Tuple, List, Optional
-from christina.logger import get_logger
+
 from christina.db import RecordNotFound, RecordExists
+from christina.logger import get_logger
+from . import models, schemas
 
 logger = get_logger(__name__)
 
@@ -14,14 +16,14 @@ def get_video(db: Session, id: int):
 
 
 def get_videos(
-    db: Session,
-    *,
-    creator_id: Optional[int],
-    char: Optional[Union[int, List[int]]],
-    tag: Optional[Union[int, List[int]]],
-    offset: int,
-    limit: int,
-    order: str
+        db: Session,
+        *,
+        creator_id: Optional[int],
+        char: Optional[Union[int, List[int]]],
+        tag: Optional[Union[int, List[int]]],
+        offset: int,
+        limit: int,
+        order: str
 ) -> Tuple[models.Video, int]:
     query = db.query(models.Video) \
         .filter(models.Video.deleted == None) \
@@ -168,8 +170,8 @@ def remove_video_char(db: Session, video_id: int, char_id: str):
 def exist_video_char(db: Session, video_id: int, char_id: str) -> bool:
     return bool(
         db.query(models.video_char_table)
-        .filter_by(video_id=video_id, char_id=char_id)
-        .first()
+            .filter_by(video_id=video_id, char_id=char_id)
+            .first()
     )
 
 
@@ -216,6 +218,6 @@ def remove_video_tag(db: Session, video_id: int, tag_id: str):
 def exist_video_tag(db: Session, video_id: int, tag_id: str) -> bool:
     return bool(
         db.query(models.video_tag_table)
-        .filter_by(video_id=video_id, tag_id=tag_id)
-        .first()
+            .filter_by(video_id=video_id, tag_id=tag_id)
+            .first()
     )

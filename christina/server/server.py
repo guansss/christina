@@ -1,9 +1,12 @@
+import os
+
 from fastapi import FastAPI, staticfiles, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
+
+# noinspection PyUnresolvedReferences
 import christina.env
 from .routes import video, download, people, character, tag
-import os
 
 app = FastAPI()
 

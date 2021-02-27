@@ -1,5 +1,5 @@
-from typing import Any, Iterator, Optional, Union, Callable, TypeVar
 import datetime
+from typing import Any, Iterator, Optional, Union, Callable, TypeVar
 
 T = TypeVar('T')
 

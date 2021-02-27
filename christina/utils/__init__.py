@@ -1,3 +1,3 @@
-from .string import *
-from .misc import *
 from .eventemitter import *
+from .misc import *
+from .string import *

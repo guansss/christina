@@ -1,9 +1,11 @@
 from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from christina.db import get_db
-from christina.video import crud, schemas
 from christina.logger import get_logger
+from christina.video import crud, schemas
 
 logger = get_logger(__name__)
 

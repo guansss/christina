@@ -1,6 +1,8 @@
 from datetime import datetime
-from pydantic import BaseModel, validator
 from typing import List, Optional
+
+from pydantic import BaseModel, validator
+
 from christina import net
 
 

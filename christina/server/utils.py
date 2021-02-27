@@ -1,17 +1,19 @@
-from fastapi import WebSocket
-from websockets.exceptions import ConnectionClosed
-from starlette.websockets import WebSocketState
-from typing import List, Union
-from christina.logger import get_logger
 import asyncio
+from typing import List, Union
+
+from fastapi import WebSocket
+from starlette.websockets import WebSocketState
+from websockets.exceptions import ConnectionClosed
+
+from christina.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class ConnectionManager:
-    '''
+    """
     https://fastapi.tiangolo.com/advanced/websockets/#handling-disconnections-and-multiple-clients
-    '''
+    """
 
     def __init__(self):
         self.active_connections: List[WebSocket] = []

@@ -1,5 +1,6 @@
-from pymitter import EventEmitter as BaseEventEmitter
 import asyncio
+
+from pymitter import EventEmitter as BaseEventEmitter
 
 
 class EventEmitter(BaseEventEmitter):
