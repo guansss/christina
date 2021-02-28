@@ -64,8 +64,8 @@ def route_videos(
 
 
 @router.get('/random', response_model=schemas.Video)
-def route_video(current_id: Optional[int], rating: Optional[int] = None, db: Session = Depends(get_db)):
-    return crud.get_random_video(db, current_id, rating)
+def route_video(exclude: Optional[int], rating: Optional[int] = None, db: Session = Depends(get_db)):
+    return crud.get_random_video(db, exclude, rating)
 
 
 @router.get('/{id}', response_model=schemas.Video)
@@ -92,12 +92,12 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     creator_id = None
 
     if info.creator_name:
-        creator = crud.find_person(db, name=info.creator_name)
+        person = crud.find_person(db, name=info.creator_name)
 
-        if not creator:
-            creator = crud.create_person(db, name=info.creator_name, url=info.creator_url)
+        if not person:
+            person = crud.create_person(db, name=info.creator_name, url=info.creator_url)
 
-        creator_id = creator.id
+        creator_id = person.id
 
     video = schemas.VideoBase(
         type=source.type,
