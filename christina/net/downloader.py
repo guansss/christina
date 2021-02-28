@@ -102,11 +102,15 @@ async def download_threaded(task: DownloadTask):
 
         task.state = DownloadTask.State.LOADING
 
+        proxy: Optional[str] = None
+
         if task.use_proxy:
             # never use proxy on local host...
             if '127.0.0.1' not in task.url:
-                if HTTP_PROXY:
-                    logger.info('Using proxy:', HTTP_PROXY)
+                proxy = HTTP_PROXY
+
+                if proxy:
+                    logger.info('Using proxy:', proxy)
                 else:
                     raise ValueError('Proxy is requested but could not be found in env.')
             else:
@@ -120,7 +124,7 @@ async def download_threaded(task: DownloadTask):
 
         raise TypeError('Download failed for some reason.')
 
-        async with http_session.get(task.url, proxy=HTTP_PROXY) as resp:
+        async with http_session.get(task.url, proxy=proxy) as resp:
             task.size = int(resp.headers.get('content-length', 0))
 
             with open(task.path, 'wb') as fd:
