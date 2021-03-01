@@ -239,7 +239,8 @@ def remove(id: str):
     task.stop()
 
     # remove temp file
-    Path(task.temp_file).unlink(missing_ok=True)
+    with suppress(FileNotFoundError):
+        Path(task.temp_file).unlink()
 
     download_tasks.remove(task)
 
