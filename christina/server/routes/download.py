@@ -1,10 +1,9 @@
 import asyncio
 
-from fastapi import APIRouter, WebSocket, HTTPException
+from fastapi import APIRouter, WebSocket
 from websockets.exceptions import ConnectionClosed
 
-from christina import net
-from christina.net.downloader import DownloadTask
+from christina.net import downloader
 from ..utils import ConnectionManager
 
 download_ws_manager = ConnectionManager()
@@ -12,15 +11,19 @@ download_ws_manager = ConnectionManager()
 router = APIRouter(prefix='/download')
 
 
-@router.get('/retry/{id}')
-def route_retry(id: str):
-    try:
-        net.retry(id)
-    except ValueError as e:
-        raise HTTPException(400, repr(e))
+@router.get('/{id}/stop')
+def route_stop(id: str):
+    downloader.stop(id)
 
-    # if succeeded, return something other than null...
-    return {"id": id}
+
+@router.get('/{id}/start')
+def route_start(id: str):
+    downloader.start(id)
+
+
+@router.delete('/{id}')
+def route_remove(id: str):
+    downloader.remove(id)
 
 
 @router.websocket('/download/')
@@ -39,27 +42,27 @@ async def ws_tasks(websocket: WebSocket, interval: int = 1000):
         download_ws_manager.disconnect(websocket)
 
 
-@net.downloader_emitter.on('added')
-def on_added(task: DownloadTask):
+@downloader.emitter.on('added')
+def on_added(task: downloader.DownloadTask):
     download_ws_manager.broadcast({
         'type': 'added',
         'data': task.id
     })
 
 
-@net.downloader_emitter.on('loaded')
-def on_added(task: DownloadTask):
+@downloader.emitter.on('loaded')
+def on_added(task: downloader.DownloadTask):
     download_ws_manager.broadcast({
         'type': 'loaded',
         'data': task.id
     })
 
 
-task_send_keys = ['id', 'loaded', 'size', 'type', 'name', 'state', 'error']
+task_send_attrs = ['id', 'loaded', 'size', 'type', 'name', 'state', 'error']
 
 
 def get_tasks():
     return [
-        {key: getattr(task, key) for key in task_send_keys}
-        for task in net.download_tasks
+        {key: getattr(task, key) for key in task_send_attrs}
+        for task in downloader.download_tasks
     ]

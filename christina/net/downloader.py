@@ -1,8 +1,10 @@
 import asyncio
 import os
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
 from threading import Thread
 from typing import Callable, Optional, List
 
@@ -12,14 +14,22 @@ from christina import utils
 from christina.logger import get_logger
 from christina.tools.proxy import HTTP_PROXY
 
+DEV_MODE = bool(os.getenv('DEV', 0))
+
+DOWNLOAD_DIR = Path(os.environ['DATA_DIR'])
+TEMP_DIR = Path(os.environ['TEMP_DIR'])
+
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
 logger = get_logger(__name__)
 loop = asyncio.new_event_loop()
-http_session = None
 
-download_dir = os.environ['DATA_DIR']
+# session will be initialized in new thread
+http_session: aiohttp.ClientSession
+
 download_tasks: List['DownloadTask'] = []
 
-downloader_emitter = utils.EventEmitter()
+emitter = utils.EventEmitter()
 
 
 @dataclass
@@ -32,81 +42,95 @@ class Downloadable:
     chunk_size: int = 16384
     onload: Optional[Callable[[], None]] = None
     onerror: Optional[Callable[[Exception], None]] = None
-    onended: Optional[Callable[[], None]] = None
+    onstop: Optional[Callable[[], None]] = None
+
+
+class DownloadTaskState(IntEnum):
+    INITIAL = 0
+    LOADING = 1
+    SUCCEEDED = 2
+    FAILED = 3
+    STOPPED = 4
 
 
 class DownloadTask:
     def __init__(self, downloadable: Downloadable):
-        downloadable.url = 'http://127.0.0.1:8000/test.txt'
+        if downloadable.type == 'video':
+            downloadable.url = 'http://127.0.0.1:8000/test.mp4'
+        else:
+            downloadable.url = 'http://127.0.0.1:8000/test.jpg'
 
         self.downloadable = downloadable
 
-        self.id = uuid.uuid4().hex[:8]
-        self.path = os.path.join(download_dir, downloadable.file)
-        self.state = DownloadTask.State.INITIAL
+        id_conflict = True
+
+        while id_conflict:
+            self.id = uuid.uuid4().hex[:8]
+            id_conflict = bool(get_task(self.id))
+
+        self._file = downloadable.file
+        self.file = str(DOWNLOAD_DIR.joinpath(downloadable.file))
+        self.temp_file = str(TEMP_DIR.joinpath(self.id))
+
+        self.state = DownloadTaskState.INITIAL
         self.loaded = 0
         self.size = 0
         self.error = ''
 
-    def reset(self):
-        self.state = DownloadTask.State.INITIAL
-        self.loaded = 0
+        self.fetch_task: Optional[asyncio.Task] = None
+
+    def start(self):
+        # a quick validation to raise exception immediately
+        if self.state in [DownloadTaskState.LOADING, DownloadTaskState.SUCCEEDED]:
+            raise Exception(f'Invalid state: {self.state}')
+
         self.error = ''
 
-    def __getattr__(self, key: str):
-        # delegate the downloadable's attributes
-        if key in self.__dict__:
-            return self.__dict__[key]
-        return getattr(self.downloadable, key)
+        asyncio.run_coroutine_threadsafe(self.__download(), loop)
 
-    class State(IntEnum):
-        INITIAL = 0
-        LOADING = 1
-        SUCCEEDED = 2
-        FAILED = 3
+    async def __download(self):
+        try:
+            logger.info(f'Downloading "{self.url}"\n...to "{self.file}"')
 
+            # validate again to prevent race condition
+            if self.state in [DownloadTaskState.LOADING, DownloadTaskState.SUCCEEDED]:
+                raise Exception(f'Invalid state: {self.state}')
 
-def get_task(id: str):
-    return utils.find(download_tasks, lambda task: task.id == id)
+            self.state = DownloadTaskState.LOADING
 
+            self.fetch_task = loop.create_task(self.fetch())
 
-def retry(id: str):
-    task = get_task(id)
+            await self.fetch_task
 
-    if not task:
-        raise ValueError(f'Could not find task by ID: {id}.')
+            self.succeed()
 
-    if task.state != DownloadTask.State.FAILED:
-        raise ValueError(f'Cannot retry a task that has not failed. (state: {task.state})')
+            self.onload and self.onload()
 
-    task.reset()
+            emitter.emit_threading('loaded', self)
 
-    asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
+        except asyncio.CancelledError:
+            logger.info(f'Aborted downloading {self.url}')
+            self.onstop and self.onstop()
 
+        except Exception as e:
+            logger.error(f'Error while downloading {self.url}')
+            logger.exception(e)
 
-def download(downloadable: Downloadable):
-    task = DownloadTask(downloadable)
-    download_tasks.append(task)
-    downloader_emitter.emit_threading('added', task)
+            self.failure(e)
 
-    asyncio.run_coroutine_threadsafe(download_threaded(task), loop)
+            self.onerror and self.onerror(e)
 
-    return task
+            emitter.emit_threading('failed', self)
 
+        finally:
+            self.fetch_task = None
 
-async def download_threaded(task: DownloadTask):
-    fd = None
-
-    try:
-        logger.info(f'Downloading "{task.url}"\n...to "{task.path}"')
-
-        task.state = DownloadTask.State.LOADING
-
+    async def fetch(self):
         proxy: Optional[str] = None
 
-        if task.use_proxy:
+        if self.use_proxy:
             # never use proxy on local host...
-            if '127.0.0.1' not in task.url:
+            if '127.0.0.1' not in self.url:
                 proxy = HTTP_PROXY
 
                 if proxy:
@@ -114,62 +138,110 @@ async def download_threaded(task: DownloadTask):
                 else:
                     raise ValueError('Proxy is requested but could not be found in env.')
             else:
-                logger.warn(f'Proxy is ignored for local host ({task.url})')
+                logger.warn(f'Proxy is ignored for local host ({self.url})')
 
         # fake download
-        task.size = 123_456_789
-        while task.loaded < task.size:
+        self.size = 123_456_789
+        while self.loaded < self.size:
             await asyncio.sleep(1)
-            task.loaded += task.size / 5
+            logger.log(self.loaded)
+            self.loaded += self.size / 30
+        self.loaded = self.size
 
-        raise TypeError('Download failed for some reason.')
+        raise Exception('Download failed for some reason.')
 
-        async with http_session.get(task.url, proxy=proxy) as resp:
-            task.size = int(resp.headers.get('content-length', 0))
+        headers = {}
 
-            with open(task.path, 'wb') as fd:
-                fd = fd
+        with suppress(FileNotFoundError):
+            # start from the last position if the last download didn't succeed
+            self.loaded = Path(self.temp_file).stat().st_size
 
-                async for chunk in resp.content.iter_chunked(task.chunk_size):
-                    fd.write(chunk)
+            headers['Range'] = f'bytes={self.loaded}-'
 
-                    task.loaded = fd.tell()
+        async with http_session.get(self.url, headers=headers, proxy=proxy) as resp:
+            resp.raise_for_status()
 
-                # fake download
-                task.size = 123_456_789
-                while task.loaded < task.size:
-                    await asyncio.sleep(1)
-                    task.loaded += task.size / 5
+            content_length = int(resp.headers.get('content-length', '0'))
+            self.size = self.loaded + content_length
 
-                logger.info(f'Downloaded "{task.url}" (size: {fd.tell()})')
+            with open(self.temp_file, 'ab') as f:
+                async for chunk in resp.content.iter_chunked(self.chunk_size):
+                    f.write(chunk)
 
-        # is this necessary?
-        task.state = DownloadTask.State.SUCCEEDED
+                    self.loaded += len(chunk)
 
-        # remove succeeded task
-        download_tasks.remove(task)
+                # correct the size
+                self.loaded = self.size = f.tell()
 
-        task.onload and task.onload()
+        logger.info(f'Downloaded "{self.url}" (size: {self.size})')
 
-        downloader_emitter.emit_threading('loaded', task)
+    def succeed(self):
+        self.state = DownloadTaskState.SUCCEEDED
 
-    except Exception as e:
-        logger.error(f'Error while downloading {task.url}')
-        logger.exception(e)
+        if DEV_MODE:
+            # the file can conflict all the time during development
+            Path(self.temp_file).replace(self.file)
+        else:
+            Path(self.temp_file).rename(self.file)
 
-        if fd:
-            try:
-                os.unlink(fd.name)
-            except Exception:
-                pass
+    # this method cannot be named `fail` due to a bug of PyCharm...
+    # https://stackoverflow.com/a/21955247/13237325
+    def failure(self, e: Exception):
+        self.state = DownloadTaskState.FAILED
+        self.error = repr(e)
 
-        task.state = DownloadTask.State.FAILED
-        task.error = repr(e)
-        task.onerror and task.onerror(e)
+    def stop(self):
+        if self.state not in [DownloadTaskState.SUCCEEDED, DownloadTaskState.FAILED, DownloadTaskState.STOPPED]:
+            self.state = DownloadTaskState.STOPPED
 
-        downloader_emitter.emit_threading('failed', task)
-    finally:
-        task.onended and task.onended()
+            if self.fetch_task:
+                self.fetch_task.cancel()
+                self.fetch_task = None
+
+    def __getattr__(self, key: str):
+        # delegate the downloadable's attributes
+        if key in self.__dict__:
+            return self.__dict__[key]
+        return getattr(self.downloadable, key)
+
+
+def get_task(id: str, mandatory=False):
+    task = utils.find(download_tasks, lambda task: task.id == id)
+
+    # the task must exist if mandatory
+    if not task and mandatory:
+        raise ValueError(f'Could not find task by ID: {id}.')
+
+    return task
+
+
+def download(downloadable: Downloadable):
+    task = DownloadTask(downloadable)
+
+    download_tasks.append(task)
+    emitter.emit_threading('added', task)
+
+    task.start()
+
+    return task
+
+
+def start(id: str):
+    get_task(id, mandatory=True).start()
+
+
+def stop(id: str):
+    get_task(id, mandatory=True).stop()
+
+
+def remove(id: str):
+    task = get_task(id, mandatory=True)
+    task.stop()
+
+    # remove temp file
+    Path(task.temp_file).unlink(missing_ok=True)
+
+    download_tasks.remove(task)
 
 
 def downloader_thread():
