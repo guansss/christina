@@ -10,5 +10,5 @@ class EventEmitter(BaseEventEmitter):
         self.loop = asyncio.get_event_loop()
 
     # emit event in thread in which this emitter is created
-    def emit_threading(self, event, *args, **kwargs):
+    def emit_threading(self, event, *args):
         self.loop.call_soon_threadsafe(super().emit, event, *args)

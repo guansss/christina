@@ -1,13 +1,15 @@
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Callable
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from christina import net
+from christina import utils
 from christina.db import engine, get_db, get_db_ctx
+from christina.env import DEV_MODE
 from christina.logger import get_logger
+from christina.net import downloader
 from christina.video import parser, crud, models, schemas
 
 models.Base.metadata.create_all(bind=engine)
@@ -31,21 +33,15 @@ def route_videos(
         db: Session = Depends(get_db)
 ):
     # the char and tag can be an array like "1,2,3"
-    try:
-        if ',' in char:
-            char = map(int, char.split(','))
-        else:
-            char = int(char)
-    except Exception:
-        char = None
+    if ',' in char:
+        char = map(int, char.split(','))
+    else:
+        char = int(char)
 
-    try:
-        if ',' in tag:
-            tag = map(int, tag.split(','))
-        else:
-            tag = int(tag)
-    except Exception:
-        tag = None
+    if ',' in tag:
+        tag = map(int, tag.split(','))
+    else:
+        tag = int(tag)
 
     videos, total = crud.get_videos(
         db,
@@ -116,48 +112,85 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     file = os.path.join(video_dir, f'{basename}.{info.ext}')
     thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')
 
-    video_downloadable = net.Downloadable(
+    crud.update_video(db, db_video, {
+        'file': file,
+        'thumb_file': thumb_file,
+    })
+
+    video_dl_target = downloader.Downloadable(
         url=video.video_dl_url,
         file=file,
-        type='video',
         name=video.title,
-        use_proxy=True
-    )
-    thumb_downloadable = net.Downloadable(
-        url=video.thumb_dl_url,
-        file=thumb_file,
-        type='image',
-        name=video.title,
-        use_proxy=True
-    )
-
-    video_downloadable.onload = clear_fields(db_video.id, 'video_dl_url', 'video_dl_id')
-    thumb_downloadable.onload = clear_fields(db_video.id, 'thumb_dl_url', 'thumb_dl_id')
-    video_task = net.download(video_downloadable)
-    thumb_task = net.download(thumb_downloadable)
-
-    crud.update_video(
-        db,
-        db_video,
-        {
-            'file': file,
-            'thumb_file': thumb_file,
-            'video_dl_id': video_task.id,
-            'thumb_dl_id': thumb_task.id,
+        use_proxy=True,
+        meta={
+            'video_id': db_video.id,
+            'type': 'video'
         }
     )
+    thumb_dl_target = downloader.Downloadable(
+        url=video.thumb_dl_url,
+        file=thumb_file,
+        name=video.title,
+        use_proxy=True,
+        meta={
+            'video_id': db_video.id,
+            'type': 'image'
+        }
+    )
+
+    if DEV_MODE:
+        video_dl_target.url = 'http://127.0.0.1:8000/test.mp4'
+        thumb_dl_target.url = 'http://127.0.0.1:8000/test.jpg'
+
+    downloader.add(video_dl_target)
+    downloader.add(thumb_dl_target)
 
     return db_video
 
 
-def clear_fields(video_id: int, *fields: str):
-    def fn():
-        try:
-            with get_db_ctx() as db:
-                for field in fields:
-                    crud.update_video(db, video_id, {field: None})
-        except Exception as e:
-            logger.warn('Could not clear fields:', fields)
-            logger.exception(e)
+@downloader.emitter.on('added')
+def on_added(targets: List[downloader.Downloadable]):
+    update_download_fields(targets, save_dl_id)
 
-    return fn
+
+@downloader.emitter.on('loaded')
+def on_loaded(targets: List[downloader.Downloadable]):
+    update_download_fields(targets, clear_dl_fields)
+
+
+def save_dl_id(target: downloader.Downloadable):
+    return {
+        'video_dl_id': target.gid,
+    } if target.meta['type'] == 'video' else {
+        'thumb_dl_id': target.gid,
+    }
+
+
+def clear_dl_fields(target: downloader.Downloadable):
+    return {
+        'video_dl_url': None,
+        'video_dl_id': None,
+    } if target.meta['type'] == 'video' else {
+        'thumb_dl_url': None,
+        'thumb_dl_id': None,
+    }
+
+
+def update_download_fields(
+        targets: List[downloader.Downloadable],
+        get_fields: Callable[[downloader.Downloadable], dict]
+):
+    try:
+        # don't bother the database if there's no video-related targets
+        if not utils.find(targets, lambda target: 'video_id' in target.meta):
+            return
+
+        with get_db_ctx() as db:
+            for target in targets:
+                fields = get_fields(target)
+
+                crud.update_video(db, target.meta['video_id'], fields)
+
+    except Exception as e:
+        logger.warn('Could not update download fields by targets', targets)
+        logger.exception(e)

@@ -18,6 +18,8 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
+        self.loop = asyncio.get_event_loop()
+
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -26,7 +28,7 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     def broadcast(self, message: Union[str, dict]):
-        asyncio.create_task(self.broadcast_async(message))
+        self.loop.call_soon_threadsafe(lambda: self.loop.create_task(self.broadcast_async(message)))
 
     async def broadcast_async(self, message: Union[str, dict]):
         try:
