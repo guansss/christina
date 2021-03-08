@@ -33,15 +33,17 @@ def route_videos(
         db: Session = Depends(get_db)
 ):
     # the char and tag can be an array like "1,2,3"
-    if ',' in char:
-        char = map(int, char.split(','))
-    else:
-        char = int(char)
+    if char:
+        if ',' in char:
+            char = map(int, char.split(','))
+        else:
+            char = int(char)
 
-    if ',' in tag:
-        tag = map(int, tag.split(','))
-    else:
-        tag = int(tag)
+    if tag:
+        if ',' in tag:
+            tag = map(int, tag.split(','))
+        else:
+            tag = int(tag)
 
     videos, total = crud.get_videos(
         db,
