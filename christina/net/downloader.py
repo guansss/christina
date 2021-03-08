@@ -86,10 +86,14 @@ def update_status():
 
         complete_targets = []
 
-        for target in pending_targets:
-            for download in downloads:
-                if download['status'] == 'complete' and download['gid'] == target.gid:
-                    logger.info('Downloaded', target.gid, target.url)
+        for download in downloads:
+            # an "id" field is more preferable
+            download['id'] = download['gid']
+            del download['gid']
+
+            for target in pending_targets:
+                if download['status'] == 'complete' and download['id'] == target.id:
+                    logger.info('Downloaded', target.id, target.url)
 
                     complete_targets.append(target)
                     break

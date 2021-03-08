@@ -17,7 +17,9 @@ ENCODERS_BY_TYPE[datetime] = utils.timestamp
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={
         # may need to wait a while for a spun-down HDD to warm up (~6 sec)
-        # or an Aria2 RPC request to respond (~10 sec)
+        # or an Aria2 RPC request to respond (0-10 sec),
+        # otherwise a "database is locked" error will occur after
+        # the default timeout (5 sec)
         'timeout': 30,
         "check_same_thread": False,
     }

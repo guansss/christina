@@ -25,7 +25,8 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     def broadcast(self, message: Union[str, dict]):
         self.loop.call_soon_threadsafe(lambda: self.loop.create_task(self.broadcast_async(message)))

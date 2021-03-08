@@ -1,4 +1,5 @@
 import asyncio
+from typing import List
 
 from fastapi import APIRouter, WebSocket
 from websockets.exceptions import ConnectionClosed
@@ -31,16 +32,16 @@ async def ws_tasks(websocket: WebSocket):
 
 
 @downloader.emitter.on('added')
-def on_added(gid: str):
+def on_added(targets: List[downloader.Downloadable]):
     download_ws_manager.broadcast({
         'type': 'added',
-        'data': gid
+        'data': [target.id for target in targets]
     })
 
 
 @downloader.emitter.on('loaded')
-def on_loaded(gid: str):
+def on_loaded(targets: List[downloader.Downloadable]):
     download_ws_manager.broadcast({
         'type': 'loaded',
-        'data': gid
+        'data': [target.id for target in targets]
     })
