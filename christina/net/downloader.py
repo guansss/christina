@@ -19,7 +19,7 @@ emitter = utils.EventEmitter()
 
 
 class Downloadable(BaseModel):
-    gid: str = ''
+    id: str = ''
     url: str
     file: str
     name: str
@@ -53,13 +53,13 @@ def update_status():
 
         # split the targets into two lists
         for target in pending_targets:
-            if target.gid:
+            if target.id:
                 registered.append(target)
             else:
                 unregistered.append(target)
 
         for target in registered:
-            multi_call.aria2.tellStatus(target.gid, aria2_status_keys)
+            multi_call.aria2.tellStatus(target.id, aria2_status_keys)
 
         for target in unregistered:
             multi_call.aria2.addUri([target.url], {
@@ -79,7 +79,7 @@ def update_status():
         for i, gid in enumerate(unregistered_result):
             logger.info('Download added', gid, unregistered[i].url)
 
-            unregistered[i].gid = gid
+            unregistered[i].id = gid
 
         if len(unregistered):
             emitter.emit('added', unregistered)

@@ -160,9 +160,9 @@ def on_loaded(targets: List[downloader.Downloadable]):
 
 def save_dl_id(target: downloader.Downloadable):
     return {
-        'video_dl_id': target.gid,
+        'video_dl_id': target.id,
     } if target.meta['type'] == 'video' else {
-        'thumb_dl_id': target.gid,
+        'thumb_dl_id': target.id,
     }
 
 
