@@ -1,4 +1,4 @@
-import os
+import os.path
 from datetime import datetime
 from typing import Optional, List, Callable
 
@@ -14,8 +14,8 @@ from christina.video import parser, crud, models, schemas
 
 models.Base.metadata.create_all(bind=engine)
 
-video_dir = 'vid'
-img_dir = 'img'
+VIDEO_DIR = 'vid'
+IMG_DIR = 'img'
 
 logger = get_logger(__name__)
 
@@ -109,8 +109,8 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     basename = f'{db_video.id:04}_{video.type}_{video.title}'
 
-    file = os.path.join(video_dir, f'{basename}.{info.ext}')
-    thumb_file = os.path.join(img_dir, f'{basename}.{info.thumb_ext}')
+    file = os.path.join(VIDEO_DIR, f'{basename}.{info.ext}')
+    thumb_file = os.path.join(IMG_DIR, f'{basename}.{info.thumb_ext}')
 
     crud.update_video(db, db_video, {
         'file': file,
@@ -139,8 +139,8 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     )
 
     if DEV_MODE:
-        video_dl_target.url = 'http://127.0.0.1:8000/test.mp4'
-        thumb_dl_target.url = 'http://127.0.0.1:8000/test.jpg'
+        video_dl_target.url = 'http://127.0.0.1/test.mp4'
+        thumb_dl_target.url = 'http://127.0.0.1/test.jpg'
 
     downloader.add(video_dl_target)
     downloader.add(thumb_dl_target)

@@ -11,7 +11,7 @@ from christina import utils
 from christina.logger import get_logger
 from christina.tools.proxy import HTTP_PROXY
 
-DOWNLOAD_DIR = Path(os.environ['DATA_DIR'])
+DOWNLOAD_DIR = Path(os.environ['STATIC_DIR'])
 
 logger = get_logger(__name__)
 

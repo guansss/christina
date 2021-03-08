@@ -40,11 +40,11 @@ class Video(VideoBase):
 
     @validator("url", always=True)
     def get_url(cls, v, values):
-        return net.static(values['file'])
+        return net.static_url(values['file'])
 
     @validator("thumb", always=True)
     def get_thumb(cls, v, values):
-        return net.static(values['thumb_file'])
+        return net.static_url(values['thumb_file'])
 
     class Config:
         orm_mode = True
