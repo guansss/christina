@@ -187,9 +187,10 @@ def update_download_fields(
 
         with get_db_ctx() as db:
             for target in targets:
-                fields = get_fields(target)
+                if 'video_id' in target.meta:
+                    fields = get_fields(target)
 
-                crud.update_video(db, target.meta['video_id'], fields)
+                    crud.update_video(db, target.meta['video_id'], fields)
 
     except Exception as e:
         logger.warn('Could not update download fields by targets', targets)

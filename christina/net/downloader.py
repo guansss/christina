@@ -98,10 +98,11 @@ def update_status():
                     complete_targets.append(target)
                     break
 
-        for target in complete_targets:
-            pending_targets.remove(target)
+        if len(complete_targets):
+            for target in complete_targets:
+                pending_targets.remove(target)
 
-        emitter.emit('loaded', complete_targets)
+            emitter.emit('loaded', complete_targets)
 
         # clear the error
         update_status_error = ''
