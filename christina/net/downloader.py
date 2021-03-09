@@ -27,7 +27,6 @@ class Downloadable(BaseModel):
     meta: dict = {}
 
 
-# use independent proxies to prevent conflicts because ServerProxy is not thread-safe
 aria2_rpc = xmlrpc.client.ServerProxy(os.environ['ARIA2_RPC'], allow_none=True)
 
 aria2_status_keys = ['gid', 'status', 'totalLength', 'completedLength', 'downloadSpeed', 'errorMessage']
@@ -47,6 +46,9 @@ def update_status():
     global downloads, update_status_error
 
     try:
+        if not len(pending_targets):
+            return
+
         multi_call = xmlrpc.client.MultiCall(aria2_rpc)
 
         registered, unregistered = [], []
@@ -108,9 +110,11 @@ def update_status():
         update_status_error = ''
 
     except Exception as e:
+        err = repr(e)
+
         # only print a newly occurring error
-        if not update_status_error:
-            update_status_error = repr(e)
+        if err != update_status_error:
+            update_status_error = err
             logger.exception(e)
 
 
