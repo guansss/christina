@@ -30,6 +30,7 @@ def get_random_video(db: Session, exclude: Optional[int], rating: Optional[int])
 def get_videos(
         db: Session,
         *,
+        search: Optional[str],
         creator_id: Optional[int],
         char: Optional[Union[int, List[int]]],
         tag: Optional[Union[int, List[int]]],
@@ -40,6 +41,9 @@ def get_videos(
     query = db.query(models.Video) \
         .filter(models.Video.deleted == None) \
         .options(selectinload(models.Video.creator), selectinload(models.Video.chars), selectinload(models.Video.tags))
+
+    if search:
+        query = query.filter(models.Video.title.like(f'%{search}%'))
 
     if creator_id:
         query = query.filter(models.Video.creator_id == creator_id)

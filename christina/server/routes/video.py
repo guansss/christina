@@ -25,6 +25,7 @@ class ThumbUpdate(BaseModel):
 
 @router.get('', response_model=schemas.VideoList)
 def route_videos(
+        search: Optional[str] = None,
         creator: Optional[int] = None,
         char: Optional[str] = None,
         tag: Optional[str] = None,
@@ -48,6 +49,7 @@ def route_videos(
 
     videos, total = crud.get_videos(
         db,
+        search=search,
         creator_id=creator,
         char=char,
         tag=tag,
