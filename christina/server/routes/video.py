@@ -1,25 +1,26 @@
-import os.path
 from datetime import datetime
 from typing import Optional, List, Callable
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from christina import utils
 from christina.db import engine, get_db, get_db_ctx
 from christina.env import DEV_MODE
 from christina.logger import get_logger
-from christina.net import downloader
-from christina.video import parser, crud, models, schemas
+from christina.net import downloader, static
+from christina.video import parser, crud, models, schemas, tools
 
 models.Base.metadata.create_all(bind=engine)
-
-VIDEO_DIR = 'vid'
-IMG_DIR = 'img'
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix='/videos')
+
+
+class ThumbUpdate(BaseModel):
+    time: float
 
 
 @router.get('', response_model=schemas.VideoList)
@@ -62,7 +63,7 @@ def route_videos(
 
 
 @router.get('/random', response_model=schemas.Video)
-def route_video(exclude: Optional[int], rating: Optional[int] = None, db: Session = Depends(get_db)):
+def route_random_video(exclude: Optional[int], rating: Optional[int] = None, db: Session = Depends(get_db)):
     return crud.get_random_video(db, exclude, rating)
 
 
@@ -71,8 +72,17 @@ def route_video(id: int, db: Session = Depends(get_db)):
     return crud.get_video(db, id)
 
 
+@router.put('/{id}/thumb')
+def route_thumb(id: int, update: ThumbUpdate, db: Session = Depends(get_db)):
+    video = crud.get_video(db, id)
+    video_file = static.static_file(video.file)
+    thumb_file = static.static_file(video.thumb_file)
+
+    tools.gen_thumb(video_file, thumb_file, update.time, overwrite_existing=True)
+
+
 @router.patch('/{id}', response_model=schemas.Video)
-def route_video(id: int, update: schemas.VideoUpdate, db: Session = Depends(get_db)):
+def route_update_video(id: int, update: schemas.VideoUpdate, db: Session = Depends(get_db)):
     crud.update_video(db, id, update.dict(exclude_unset=True))
 
     return crud.get_video(db, id)
@@ -90,10 +100,7 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
     creator_id = None
 
     if info.creator_name:
-        person = crud.find_person(db, name=info.creator_name)
-
-        if not person:
-            person = crud.create_person(db, name=info.creator_name, url=info.creator_url)
+        person = crud.find_or_create_person(db, name=info.creator_name, url=info.creator_url)
 
         creator_id = person.id
 
@@ -109,10 +116,8 @@ def route_add_video(source: schemas.VideoCreate, db: Session = Depends(get_db)):
 
     db_video = crud.create_video(db, video)
 
-    basename = f'{db_video.id:04}_{video.type}_{video.title}'
-
-    file = os.path.join(VIDEO_DIR, f'{basename}.{info.ext}')
-    thumb_file = os.path.join(IMG_DIR, f'{basename}.{info.thumb_ext}')
+    file = tools.get_video_file(db_video, info.ext)
+    thumb_file = tools.get_thumb_file(db_video, info.thumb_ext)
 
     crud.update_video(db, db_video, {
         'file': file,

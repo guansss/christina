@@ -1,8 +1,9 @@
 import json
 import os
-from subprocess import Popen, PIPE, call
 
 from pydantic import BaseModel
+
+from christina import utils
 
 CONFIG_FILE = '/etc/shadowsocks-libev/config.json'
 CONFIG_TMP = '/tmp/ssconfig.tmp'
@@ -30,15 +31,10 @@ def set_proxy_config(proxy: ProxyConfig):
     with open(CONFIG_TMP, 'w') as f:
         json.dump(config, f, indent=4)
 
-    call(['sudo', 'mv', CONFIG_TMP, CONFIG_FILE])
+    utils.subprocess(['sudo', 'mv', CONFIG_TMP, CONFIG_FILE])
 
     restart_service()
 
 
 def restart_service():
-    p = Popen(['sudo', 'systemctl', 'restart', 'shadowsocks-libev-local@config'], stdout=PIPE, stderr=PIPE)
-
-    output, error = p.communicate()
-
-    if p.returncode != 0:
-        raise ChildProcessError(f'Execution failed with code {p.returncode}. Details:\n{output}\n{error}')
+    utils.subprocess('sudo systemctl restart shadowsocks-libev-local@config')

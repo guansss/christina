@@ -128,9 +128,11 @@ def find_person(db: Session, **fields):
     return db.query(models.Person).filter_by(**fields).first()
 
 
-def create_person(db: Session, name: str, url: str = None):
-    if find_person(db, name=name, url=url):
-        raise RecordExists
+def find_or_create_person(db: Session, name: str, url: str = None):
+    db_person = find_person(db, name=name, url=url)
+
+    if db_person:
+        return db_person
 
     db_person = models.Person(name=name, url=url)
     db.add(db_person)
