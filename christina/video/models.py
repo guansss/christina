@@ -11,7 +11,7 @@ class Video(Base):
     type = Column(Enum('i'))
     src_url = Column(String)
     title = Column(String)
-    rating = Column(Integer)
+    rating = Column(Integer, nullable=False)
     deleted = Column(Boolean)
 
     file = Column(String)
@@ -20,7 +20,7 @@ class Video(Base):
     video_dl_url = Column(String)
     thumb_dl_url = Column(String)
 
-    # ID of the download tasks
+    # ID of the downloads
     video_dl_id = Column(String)
     thumb_dl_id = Column(String)
 

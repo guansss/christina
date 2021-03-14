@@ -8,7 +8,7 @@ from christina import net
 
 class VideoBase(BaseModel):
     type: str
-    src_url: str
+    src_url: Optional[str]
     title: str
     uploaded: datetime
     rating: int = 0
