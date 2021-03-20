@@ -6,4 +6,4 @@ from dotenv import load_dotenv
 # so they need to be overridden...
 load_dotenv(override=True)
 
-DEV_MODE = bool(os.getenv('DEV', 0))
+DEV_MODE = bool(os.getenv('DEV', '0') == '1')
